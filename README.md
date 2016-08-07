@@ -2,7 +2,7 @@
 
 A beat-based looper coded in overtone/clojure.
 
-Based on the Synchronous Looping Environment by Eli Fieldsteel, written in SuperCollider.
+Ported from the Synchronous Looping Environment by Eli Fieldsteel, written in SuperCollider.
 
 Based on a master/slave loop paradigm, loop data (number of bars, length in seconds, location of downbeats, etc) is passed between Synths in order to maintain synchronicity. Limited only by memory and CPU.
 
