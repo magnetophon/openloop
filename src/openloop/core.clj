@@ -36,26 +36,34 @@
   (out rec-bus my-in)
   (out dir-bus dir-sig))
 
+(defn toggle
+  "Invert the val from 1 to 0 or 0 to 1"
+  [val]
+  (mod (inc amp) 2))
+
 (defsynth master-rec
   "records the master loop"
-  [t_start 0 t_stop 0 timer-bus 40 in-bus 50 loop 0 which-buf 0]
-  (def is-recording (set-reset-ff:kr t_start t_stop))
+  [start [0 :tr] stop [0 :tr] timer-bus 40 in-bus 50 loop 0 which-buf 0]
+  (def start )
+  (def is-recording (set-reset-ff:kr start stop))
   (def my-in (in:ar in-bus nr-chan))
-  (def my-timer (timer:kr (+ t_start t_stop)))
+  (def my-timer (timer:kr (+ start stop)))
   (out:kr timer-bus my-timer)
   (record-buf:ar my-in which-buf 0 1 0 is-recording loop))
 
 (defsynth slave-rec
   "records the slave loops"
-  [t_start 0 t_stop 0 in-bus 50 loop 0 which-buf 0]
-  (def is-recording (set-reset-ff:kr t_start t_stop))
+  [start [0 :tr] stop [0 :tr] in-bus 50 loop 0 which-buf 0]
+  (def is-recording (set-reset-ff:kr start stop))
   (def my-in (in:ar in-bus nr-chan))
   (record-buf:ar my-in which-buf 0 1 0 is-recording loop))
 
+(def m-play-synth (master-play [:head play-master-group]))
+
 (defsynth master-play
   "plays back the master loop"
-  [rate 1 nr-bars 1 which-buf 0 amp 1 atk-thres 0.002 timer-bus 40 length-bus 80 downbeat-bus 90 nr-bars-bus 100 out-bus 70 t_test 0]
-  (def my-timer (mod (in:kr timer-bus) max-loop-seconds))
+  [rate 1 nr-bars 1 which-buf 0 amp 1 atk-thres 0.002 timer-bus 40 length-bus 80 downbeat-bus 90 nr-bars-bus 100 out-bus 70 test 0]
+  (def my-timer (mod (in:kr timer-bus) max-loop-seconds ))
   (def start (max 0 (/ (index-in-between:kr which-buf atk-thres) nr-chan)))
   (def end (* my-timer SR))
   (def length (- end start))
@@ -68,8 +76,10 @@
           src1 (sin-osc freq)
           t1 downbeat]
       (* (decay t1 0.01) src1)))
-  (def sig (+ t_test (* (buf-rd:ar nr-chan which-buf phs 1 1) amp)))
-  ;; (def sig (* (buf-rd:ar nr-chan which-buf phs 1 1) amp))
+  ;; (def sig pingme)
+  ;; (def sig (+ pingme (* (buf-rd:ar nr-chan which-buf phs 1 1) amp)))
+  ;; (def sig (+ test (* (buf-rd:ar nr-chan which-buf phs 1 1) amp)))
+  (def sig (* (buf-rd:ar nr-chan which-buf phs 1 1) amp))
   (out:kr length-bus length)
   (out:kr downbeat-bus downbeat)
   (out:kr nr-bars-bus nr-bars)
@@ -77,7 +87,7 @@
 
 (defsynth slave-play
   "play back a slave loop"
-  [rate 1 t_jump 0 length-mul 1 which-buf 0 del 0 atk-thres 0.02 amp 1 nr-bars-bus 100 downbeat-bus 90 length-bus 80 out-bus 70]
+  [rate 1 jump [0 :tr] length-mul 1 which-buf 0 del 0 atk-thres 0.02 amp 1 nr-bars-bus 100 downbeat-bus 90 length-bus 80 out-bus 70]
   (def length (* (in:kr length-bus) length-mul))
   (def nr-bars (in:kr nr-bars-bus))
   (def downbeat (in:kr downbeat-bus))
@@ -86,7 +96,7 @@
   (def my-sync (set-reset-ff:kr downbeat 0))
   (def jump-trig (env-gen:kr (env-adsr 0.001 0.001 0 1 1 0) my-sync))
   (def del 0)
-  (def phs (select:ar my-sync [(silent:ar) (phasor:ar (+ jump-trig t_jump) (buf-rate-scale:kr which-buf) start end start)]))
+  (def phs (select:ar my-sync [(silent:ar) (phasor:ar (+ jump-trig jump) (buf-rate-scale:kr which-buf) start end start)]))
   (def sig (buf-rd:ar nr-chan which-buf phs 1 1))
   (out:ar out-bus sig))
 
@@ -152,10 +162,29 @@
 (setup)
 (start-master)
 (stop-master)
-(ctl m-play-synth :t_test 0)
+(ctl m-play-synth :test 1)
+
+(def m-play-synth (master-play [:head play-master-group]))
 
 (group-deep-clear 7)
 (pp-node-tree)
+
+(show-graphviz-synth master-play)
+
+
+(defn start-master
+  "start recording the master"
+  []
+  (ctl m-rec-synth :start 1)
+  ;; (ctl m-rec-synth :start 0)
+  )
+
+(defn stop-master
+  "stop the master record and start playing it"
+  []
+  (ctl m-rec-synth :stop 1)
+  ;; (ctl m-rec-synth :stop 0)
+  (def m-play-synth (master-play [:head play-master-group])))
 
 (comment
 
@@ -170,7 +199,6 @@
 
   (stop-master)
 
-  (show-graphviz-synth master-play)
 
   (buffer-free 0)
 
@@ -185,21 +213,6 @@
 
   (opp master-rec)
   (free 1 44))
-
-(defn start-master
-  "start recording the master"
-  []
-  (ctl m-rec-synth :t_start 1)
-  (ctl m-rec-synth :t_start 0))
-
-(defn stop-master
-  "stop the master record and start playing it"
-  []
-  (ctl m-rec-synth :t_stop 1)
-  (ctl m-rec-synth :t_stop 0)
-  (def m-play-synth (master-play [:head play-master-group])))
-
-()
 
 (buffer1)
 (setup)
