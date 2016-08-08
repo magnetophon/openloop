@@ -36,14 +36,9 @@
   (out rec-bus my-in)
   (out dir-bus dir-sig))
 
-(defn toggle
-  "Invert the val from 1 to 0 or 0 to 1"
-  [val]
-  (mod (inc amp) 2))
-
 (defsynth master-rec
   "records the master loop"
-  [start [0 :tr] stop [0 :tr] timer-bus 40 in-bus 50 loop 0 which-buf 0]
+  [start [0 :tr] stop [0 :tr] timer-bus 40 in-bus 50 loop 1 which-buf 0]
   (def start )
   (def is-recording (set-reset-ff:kr start stop))
   (def my-in (in:ar in-bus nr-chan))
@@ -53,41 +48,57 @@
 
 (defsynth slave-rec
   "records the slave loops"
-  [start [0 :tr] stop [0 :tr] in-bus 50 loop 0 which-buf 0]
+  [start [0 :tr] stop [0 :tr] in-bus 50 loop 1 which-buf 0]
   (def is-recording (set-reset-ff:kr start stop))
   (def my-in (in:ar in-bus nr-chan))
   (record-buf:ar my-in which-buf 0 1 0 is-recording loop))
 
+(setup)
 (def m-play-synth (master-play [:head play-master-group]))
+
+(show-graphviz-synth master-play)
+(stop)
+
 
 (defsynth master-play
   "plays back the master loop"
-  [rate 1 nr-bars 1 which-buf 0 amp 1 atk-thres 0.002 timer-bus 40 length-bus 80 downbeat-bus 90 nr-bars-bus 100 out-bus 70 test 0]
+  [rate 1 nr-bars 1 which-buf 0 amp 1 atk-thres 0.002 timer-bus 40 length-bus 80 downbeat-bus 90 nr-bars-bus 100 out-bus 70 ]
   (def my-timer (mod (in:kr timer-bus) max-loop-seconds ))
-  (def start (max 0 (/ (index-in-between:kr which-buf atk-thres) nr-chan)))
+  ;; (def start (select:kr (= 0 rate) [(max 0 (/ (index-in-between:kr which-buf atk-thres) nr-chan)) 0]))
+  (def start (max 1 (/ (index-in-between:kr which-buf atk-thres) nr-chan)))
+  ;; (def start (index-in-between:kr which-buf atk-thres))
+  ;; (def start (max (in:kr soundstart-bus) 0))
+  ;; (if (= 0 rate)
+  ;;   (def start 0)
+  ;;   (def start (max 0 (/ (index-in-between:kr which-buf atk-thres) nr-chan)))
+  ;;   )
   (def end (* my-timer SR))
   (def length (- end start))
-  ;; (def nr-bars (in:kr nr-bars-bus))
   (def downbeat (impulse:kr (/ (* nr-bars SR) length)))
   (def buf-start (pulse-divider:kr downbeat nr-bars (- nr-bars 1)))
   (def phs (+ start (sweep:ar buf-start SR)))
-  (def pingme
-    (let [freq 440
-          src1 (sin-osc freq)
-          t1 downbeat]
-      (* (decay t1 0.01) src1)))
-  ;; (def sig pingme)
-  ;; (def sig (+ pingme (* (buf-rd:ar nr-chan which-buf phs 1 1) amp)))
-  ;; (def sig (+ test (* (buf-rd:ar nr-chan which-buf phs 1 1) amp)))
   (def sig (* (buf-rd:ar nr-chan which-buf phs 1 1) amp))
   (out:kr length-bus length)
   (out:kr downbeat-bus downbeat)
   (out:kr nr-bars-bus nr-bars)
+  ;; (out:ar out-bus (sin-osc 220)))
+  ;; (out:ar out-bus (silent:ar)))
   (out:ar out-bus sig))
+
+
+(event)
+(defsynth metro-synth [c-bus 0 rate 1]
+  (let [trigger (impulse:kr rate)
+        count (stepper:kr trigger :min 1 :max 4)]
+    (send-trig:kr trigger count)
+    (out:kr c-bus trigger)))
+
+(on-event "/tr" #(println "trigger: " %) ::metro-synth)
+(metro-synth)
 
 (defsynth slave-play
   "play back a slave loop"
-  [rate 1 jump [0 :tr] length-mul 1 which-buf 0 del 0 atk-thres 0.02 amp 1 nr-bars-bus 100 downbeat-bus 90 length-bus 80 out-bus 70]
+  [rate 1 jump [0 :tr] length-mul 1 which-buf 0 del 0 atk-thres 0.002 amp 1 nr-bars-bus 100 downbeat-bus 90 length-bus 80 out-bus 70]
   (def length (* (in:kr length-bus) length-mul))
   (def nr-bars (in:kr nr-bars-bus))
   (def downbeat (in:kr downbeat-bus))
@@ -138,6 +149,8 @@
   (defonce buffer7 (buffer max-loop-samples nr-chan buffer7))
 
   (buffer-fill! buffer0 0)
+  ;; hack around index-in-between xruns:
+  ;; (buffer-set! buffer0 0 0.003)
   (buffer-fill! buffer1 0)
   (buffer-fill! buffer2 0)
   (buffer-fill! buffer3 0)
@@ -154,17 +167,13 @@
   (def in-synth (input [:head in-group]))
   (def out-synth (output [:head out-group]))
   (def m-rec-synth (master-rec [:head rec-group]))
+  ;; (def m-play-synth (master-play [:head play-master-group]))
   (pp-node-tree))
-
-(def in-synth (input [:head in-group]))
-(def out-synth (output [:head out-group]))
 
 (setup)
 (start-master)
 (stop-master)
-(ctl m-play-synth :test 1)
 
-(def m-play-synth (master-play [:head play-master-group]))
 
 (group-deep-clear 7)
 (pp-node-tree)
@@ -183,8 +192,10 @@
   "stop the master record and start playing it"
   []
   (ctl m-rec-synth :stop 1)
+  (def m-play-synth (master-play [:head play-master-group]))
   ;; (ctl m-rec-synth :stop 0)
-  (def m-play-synth (master-play [:head play-master-group])))
+  ;; (ctl m-play-synth :rate 1)
+  )
 
 (comment
 
