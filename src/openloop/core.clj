@@ -3,7 +3,6 @@
   )
 
 (use 'overtone.core)
-;; (use 'overtone.studio.scope)
 (connect-external-server)
 (server-info)
 (pp-node-tree)
@@ -17,21 +16,10 @@
 
 (println (status))
 
-;; ;; create some buffers
-;; ;; (dotimes [i   nr-loops]
-;; ;;   (let [bufname (clojure.string/join ["buffer" (str i)])]
-;; (for [i (range 1 8)]
-;;     (eval `(def ~(symbol (str "buffer" i)) (buffer max-loop-samples nr-chan (str "buffer" i))))
-;;     ;; (def  (buffer max-loop-samples nr-chan (str bufname)))
-;;     ))
-
-
 (defsynth input
   "routs the input to the output and the recorders"
   [amp 1 rec-bus 50 dir-bus 60]
-  ;; (def my-in (sound-in[0 1]))
   (def my-in (sound-in (range nr-chan)))
-  ;; (def my-in (in:ar 0 nr-chan ))
   (def dir-sig (* my-in amp))
   (out rec-bus my-in)
   (out dir-bus dir-sig))
@@ -53,23 +41,11 @@
   (def my-in (in:ar in-bus nr-chan))
   (record-buf:ar my-in which-buf 0 1 0 is-recording loop))
 
-(setup)
-(def m-play-synth (master-play [:head play-master-group]))
-
-
-
 (defsynth master-play
   "plays back the master loop"
   [rate 1 nr-bars 1 which-buf 0 amp 1 atk-thres 0.002 timer-bus 40 length-bus 80 downbeat-bus 90 nr-bars-bus 100 out-bus 70 ]
   (def my-timer (mod (in:kr timer-bus) max-loop-seconds ))
-  ;; (def start (select:kr (= 0 rate) [(max 0 (/ (index-in-between:kr which-buf atk-thres) nr-chan)) 0]))
   (def start (max 0 (/ (index-in-between:kr which-buf atk-thres) nr-chan)))
-  ;; (def start (index-in-between:kr which-buf atk-thres))
-  ;; (def start (max (in:kr soundstart-bus) 0))
-  ;; (if (= 0 rate)
-  ;;   (def start 0)
-  ;;   (def start (max 0 (/ (index-in-between:kr which-buf atk-thres) nr-chan)))
-  ;;   )
   (def end (* my-timer SR))
   (def length (- end start))
   (def downbeat (impulse:kr (/ (* nr-bars SR) length)))
@@ -80,35 +56,8 @@
   (out:kr length-bus length)
   (out:kr downbeat-bus downbeat)
   (out:kr nr-bars-bus nr-bars)
-  ;; (out:ar out-bus (sin-osc 220)))
-  ;; (out:ar out-bus (silent:ar)))
-  (def test (+ (* 0.5 (decay downbeat 0.1) (sin-osc 880)) sig))
-  ;; (out:ar out-bus test))
+  ;; (def test (+ (* 0.5 (decay downbeat 0.1) (sin-osc 880)) sig))
   (out:ar out-bus sig))
-
-(defsynth pinky [trigme 0]
-  (let [src1 (sin-osc 220)
-        ]
-    (* 0.5 (decay trigme 0.1) src1)))
-;; (* (decay (impulse:kr 1) 0.1) src1)))
-
-(setup)
-(start-master)
-(stop-master)
-(ctl s-rec-synth1 :start 1)
-(stop-slave)
-
-;; (def s-play-synth1 (slave-play3))
-
-(show-graphviz-synth slave-play3)
-(show-graphviz-synth pingme)
-(clear-all)
-
-(control-bus-monitor)
-(setup)
-(def s-play-synth1 (slave-play [:tail play-master-group] :which-buf 1 ))
-(def s-play-synth2 (slave-play11))
-(pp-node-tree)
 
 (defsynth slave-play
   "play back a slave loop"
@@ -117,18 +66,13 @@
   (def nr-bars (in:kr nr-bars-bus))
   (def downbeat (in:kr downbeat-bus))
   (def start (max 0 (floor (/ (index-in-between:kr which-buf atk-thres) nr-chan))))
-  ;; (def start 0)
   (def end (+ start length))
   (def my-sync (set-reset-ff:kr downbeat 0))
   (def jump-trig (env-gen:kr (env-adsr 0.001 0.001 0 1 1 0) my-sync))
-  ;; (def del 0)
-  ;; (def phs (+ 0 (sweep:ar 0 SR)))
   (def phs (select:ar my-sync [(dc:ar 0) (phasor:ar (+ jump-trig jump) (buf-rate-scale:kr which-buf) start end start)]))
   (def sig (buf-rd:ar nr-chan which-buf phs 1 1))
-  ;; (def test (+ (* 0.5 (decay downbeat 0.1) (sin-osc 880)) 0))
-  (def test (+ (* 0.5 (decay downbeat 0.1) (sin-osc 880)) sig))
-  ;; (out:ar out-bus (sin-osc 220)))
-  (out:ar out-bus test))
+  ;; (def test (+ (* 0.5 (decay downbeat 0.1) (sin-osc 880)) sig))
+  (out:ar out-bus sig))
 
 (defsynth output
   "mix everything and send it out"
@@ -147,16 +91,9 @@
   (def play-slave-group (group "play-slave-group" :after play-master-group))
   (def out-group (group "out-group" :after play-slave-group)))
 
-(defsynth pinger []
-  (let [freq 440
-        src1 (sin-osc freq)
-        t1 (in:kr 90)]
-    (* (decay t1 0.1) src1)))
-
 (defn setup
   "initialise"
   []
-  ;; (group-deep-clear 7)
   (clear-all)
   (groups)
   (defonce buffer0 (buffer max-loop-samples nr-chan buffer0))
@@ -179,16 +116,10 @@
   (buffer-fill! buffer6 0)
   (buffer-fill! buffer7 0)
 
-  ;; (dotimes [i   nr-loops]
-  ;;   (let [bufname (str "buffer" i)]
-  ;;   (buffer-fill! (symbol bufname) 0)
-  ;;     ))
-
   (def in-synth (input [:head in-group]))
   (def out-synth (output [:head out-group]))
   (def m-rec-synth (master-rec [:head rec-group]))
   (def s-rec-synth1 (slave-rec [:tail rec-group] :which-buf 1 ))
-  ;; (def s-rec-synth1 (slave-rec [:head rec-group]))
   ;; can't do this unless you use
   ;; hack around index-in-between xruns:
   ;; see above
@@ -200,7 +131,6 @@
   "start recording the master"
   []
   (ctl m-rec-synth :start 1)
-  ;; (ctl m-rec-synth :start 0)
   )
 
 (defn stop-master
@@ -222,14 +152,6 @@
 (stop-master)
 (ctl s-rec-synth1 :start 1)
 (stop-slave)
-
-(pinky (impulse:ar 1))
-
-(def s-play-synth1 (slave-play [:head play-slave-group] :which-buf 1 ))
-(clear-all)
-(pp-node-tree)
-(def s-play-synth1 (slave-play))
-(def pingster (pinky))
 
 (show-graphviz-synth master-play)
 
@@ -285,47 +207,18 @@
 
 (comment
 
+  (show-graphviz-synth slave-play3)
+  (clear-all)
+  (control-bus-monitor)
   (dotimes [i   nr-loops]
     (let [bufname (str "buffer" i)]
       ;; (buffer-fill! (symbol bufname) 0)
       (println (symbol bufname))))
 
-
-  (buffer-fill! buffer0 0)
-  (buffer-free buffer0)
-
-  (stop-master)
-
-
-  (buffer-free 0)
-
   (server-num-buffers)
   (server-num-audio-buses)
-  (buffer-fill! 0 0)
-
-  (def pingr-synth (pinger [:tail play-slave-group]))
-
-  (free 1 m-rec-synth)
-  (stop)
 
   (opp master-rec)
-  (free 1 44))
-
-(buffer1)
-(setup)
-
-(stop-all)
-(status)
-
-(stop)
-(in-group)
-
-(status)
-(buffer1)
-(buffer-fill! buffer1 0)
-(ensure-buffer-active! 1)
-(assert (buffer?  "a-bufname"))
-
-(buffer-info 9999)
-
-(buffer max-loop-samples nr-chan "a-bufname")
+  (stop-all)
+  (status)
+  )
