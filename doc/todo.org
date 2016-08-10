@@ -16,6 +16,7 @@
   - loop is recorded with upbeat, when restarting it would normally start in the middle. set the bar start at the 1
   - use  find-transient-around
   - also needed to sync lfo's and such.
+- dynamicaly set start position, independant from lenghth.
 - instant sampling (for playing chords or auto-slicing beats)
   - use find-transient around
 
@@ -29,30 +30,46 @@
 - organize by timbre similarity (pd lib)
 
 # design principles:
+
 - functional to enable undo
 - reactive
-- immutable: record all audio ,actions
-- minimal state needed:
-  - global
-    - current sample
-    - tempo
-    - downbeat
-    - chord ?
-  - per loop:
-    - start sample
-    - length
-    -
+- immutable: record all audio, actions
+- verbs for functions, nouns for defs
+
+# minimal state needed:
+
+- global
+  - current sample (= now)
+  - tempo over time
+  - downbeat
+  - chord ?
+- per loop:
+  - start sample
+  - length
+  - sync point
 
 
 # visual:
-- show loop like freewheeling:
-  - circles
-  - waveform plus pie diagram for time overlaid
-  - whole thing scales with VU.
+- show loop:
+  - linear, so we can show grid
+  - waveform plus overlaid bar for time
+  - bar height is VU.
   - with dynamic length:
-    - starts at say 100 ms per circle and when it reaches full circle it scales time.
-
-
+    - starts at say 100 ms per loop and when it's full it scales time.
+- when recording with upbeat: show upbeat as if recorded at end of loop
+- visualize what loop length would be if key would be pressed now
+  - show measures overlayed on waveform with colours representing accents:
+    - beat and bar
+    - block, meaning:
+      - when 'now' is between bar 1 and 1.5 we make a one bar loop
+      - at 1.5 we make 2 bars: bar 1 accent
+      - at 2.5 we make 3 bars: bar 1 accent
+      - at 3.5 we make 4 bars: bar 1 and 3 accents
+      - at 5 -> looplength 6, accents 1 4
+      - at 7 ll 8 ac 1 (3 half accented) 5 (7)
+      - at 10 ll 12 ac 1 (3) 5 (7) 9 (11)
+      - or ac 1 (4) 7 (10)
+      - at 14 ll 16 ac 1 (3) 5 (7) 9 (11) 13 (15)
 
 # workflow
 - master loop:
@@ -63,17 +80,10 @@
       - (find-transient-around phantom-beat (measure-to-ms 1/16))
     - start tempo tracking within x % of tapped tempo
     - visualize what loop length would be if key would be pressed now
-      - show measures overlayed on waveform with colours representing accents:
-        - beat and bar
-        - block, meaning:
-          - when 'now' is between bar 1 and 1.5 we asume a one bar loop will be made
-          - at 1.5 we assume 2 bars: bar 1 accent
-          - at 2.5 we assume 3 bars: bar 1 accent
-          - at 3.5 we assume 4 bars: bar 1 and 3 accents
-          - at 5 -> looplength 6, accents 1 4
-          - at 7 ll 8 ac 1 (3 half accented) 5 (7)
-          - at 10 ll 12 ac 1 (3) 5 (7) 9 (11)
-          - or ac 1 (4) 7 (10)
-          - at 14 ll 16 ac 1 (3) 5 (7) 9 (11) 13 (15)
-  - when pressing the same key: stop recording, start looping.
-  - when pressing another key: stop recording one loop, start looping, start recording next loop.
+  - when pressing the same key:
+    - wait for next block
+    -
+  - when pressing another key: stop recording one loop, start looping, start recording slave loop.
+- slave loop:
+  - on start:
+    - set loop start at sound start between start rec signal and next sync point
