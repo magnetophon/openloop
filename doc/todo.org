@@ -1,89 +1,144 @@
-# openloop
+* features
 
-- replacing, quantized or not
-  - including resampling
-- double length
-  - or multiply by integer
-- song sections
-  - go to 'future mode', select actions (rec, play) per loop
-  -> on next beat (or bar): apply
-- start and stop by pressing:
-  - if playing: stop
-    - if button held: start again on release, else remain  stopped
-  - if stopped: play
-    - if button held: stop playing on release, else remain playing
-- dynamic realign:
-  - loop is recorded with upbeat, when restarting it would normally start in the middle. set the bar start at the 1
-  - use  find-transient-around
-  - also needed to sync lfo's and such.
-- dynamicaly set start position, independant from lenghth.
-- instant sampling (for playing chords or auto-slicing beats)
-  - use find-transient around
+** for all loops
+*** replacing, quantized or not
+**** including re sampling with FX
+*** double length
+**** or multiply by integer
+*** song sections
+**** go to 'future mode', select actions (rec, play) per loop
+**** on next section-start-timer: apply
 
-- find-transient-around [centre range]:
-  - look 'range' ms before and after 'centre' for a transient.
+*** loop trigger hold-button functionality:
+** for master loop
+**** if playing: stop
+***** if button held: start again on release, else remain  stopped
+**** if stopped: play
+***** if button held: stop playing on release, else remain playing
+*** dynamic realign:
+**** if the loop is recorded with an upbeat, when restarting, it would normally start in the middle.
+**** This is not musically correct so we set the sync point to the 1st beat of the loop
+***** use  find-transient-around
+***** also needed to sync lfo's and such.
+*** dynamically set start position, independant from length
+**** after you record a loop, you decide you want to play it not from bar 1 to 4
+**** but from bar 0.5 to bar 4.5, or from -0.5 to 3.5.
+*** instant sampling (for playing chords or auto-slicing beats)
+**** use find-transient around
 
-
-# sound fx / presets
-
-- organize by genre -> sub-genre
-- organize by timbre similarity (pd lib)
-
-# design principles:
-
-- functional to enable undo
-- reactive
-- immutable: record all audio, actions
-- verbs for functions, nouns for defs
-
-# minimal state needed:
-
-- global
-  - current sample (= now)
-  - tempo over time
-  - downbeat
-  - chord ?
-- per loop:
-  - start sample
-  - length
-  - sync point
+*** find-transient-around [centre range]:
+**** look 'range' ms before and after 'centre' for a transient.
 
 
-# visual:
-- show loop:
-  - linear, so we can show grid
-  - waveform plus overlaid bar for time
-  - bar height is VU.
-  - with dynamic length:
-    - starts at say 100 ms per loop and when it's full it scales time.
-- when recording with upbeat: show upbeat as if recorded at end of loop
-- visualize what loop length would be if key would be pressed now
-  - show measures overlayed on waveform with colours representing accents:
-    - beat and bar
-    - block, meaning:
-      - when 'now' is between bar 1 and 1.5 we make a one bar loop
-      - at 1.5 we make 2 bars: bar 1 accent
-      - at 2.5 we make 3 bars: bar 1 accent
-      - at 3.5 we make 4 bars: bar 1 and 3 accents
-      - at 5 -> looplength 6, accents 1 4
-      - at 7 ll 8 ac 1 (3 half accented) 5 (7)
-      - at 10 ll 12 ac 1 (3) 5 (7) 9 (11)
-      - or ac 1 (4) 7 (10)
-      - at 14 ll 16 ac 1 (3) 5 (7) 9 (11) 13 (15)
+* sound fx / presets
 
-# workflow
-- master loop:
-  - count in (aka tap tempo)
-    - at 2nd tap button starts flashing in tempo
-    - set loop start at sound start
-    - set loop sync point (aka beat 1) to first beat where there was no tap
-      - (find-transient-around phantom-beat (measure-to-ms 1/16))
-    - start tempo tracking within x % of tapped tempo
-    - visualize what loop length would be if key would be pressed now
-  - when pressing the same key:
-    - wait for next block
-    -
-  - when pressing another key: stop recording one loop, start looping, start recording slave loop.
-- slave loop:
-  - on start:
-    - set loop start at sound start between start rec signal and next sync point
+** 3d morph
+** organize by genre -> sub-genre
+** organize by timbre similarity (pd lib)
+
+* design principles:
+
+** functional to enable undo
+** reactive
+** immutable: record all audio, actions
+** separate gui from engine via osc
+*** record all osc and audio
+** verbs for functions, nouns for defs
+
+
+* minimal state needed:
+
+** config file
+*** default path
+** static (cli arguments?)
+*** nr inputs (dry signal)
+*** nr outputs
+*** max loop length
+** global
+*** input audio (on disk)
+*** input osc (on disk)
+*** recording path
+*** ntp now (= now)
+*** nr of loops
+*** array of loops
+*** selected loop
+*** tempo over time (can change at any point, not just on downbeat)
+*** downbeat (for phase)
+*** chord ?
+** per loop (in RAM)
+*** input audio
+*** output audio
+*** settings/automation OSC
+*** FX chain
+*** start sample
+*** sync point
+*** length
+** disk state (for saving)
+*** all of static
+*** all of per loop
+**
+***
+
+* user interface:
+** ui input elements
+*** global
+**** tap tempo
+    - future mode
+*** per loop
+**** start/stop
+****
+** visual ui output elements
+*** show loop:
+**** linear, so we can show grid
+**** waveform plus overlaid bar for time
+**** bar height is VU.
+**** with dynamic length:
+***** starts at say 100 ms per loop and when it's full it scales time.
+** when recording with upbeat: show upbeat as if recorded at end of loop
+** visualize what loop length would be if key would be pressed now
+*** show measures overlayed on waveform with colours representing accents:
+**** beat and bar
+**** section, meaning:
+***** when 'now' is between bar 1 and 1.5 we make a one bar loop
+***** at 1.5 we make 2 bars: bar 1 accent
+***** at 2.5 we make 3 bars: bar 1 accent
+***** at 3.5 we make 4 bars: bar 1 and 3 accents
+***** at 5 -> looplength 6, accents 1 4
+***** at 7 ll 8 ac 1 (3 half accented) 5 (7)
+***** at 10 ll 12 ac 1 (3) 5 (7) 9 (11)
+***** or ac 1 (4) 7 (10)
+***** at 14 ll 16 ac 1 (3) 5 (7) 9 (11) 13 (15)
+
+* workflow
+** master loop:
+*** two possible workflows for recording the first loop: free-tempo and tap-tempo
+**** free tempo:
+***** when there is no bpm yet, we have a normal looper.
+*** then when we are recording, two things can stop it
+**** pressing the same key:
+***** wait for next switching point
+****** stop recording and start looping
+**** when pressing another key: stop recording one loop, start looping, start recording slave loop.
+** slave loop:
+*** very similar to recording a master loop with known tempo.
+**** set loop start at first sound after start rec
+
+* modes
+
+** nothing playing or recording
+*** no tempo
+**** hit loop-button
+***** start recording first loop
+**** hit tap
+***** count in (aka tap tempo)
+****** at 2nd tap button starts flashing in tempo
+****** set loop start at first sound after (or slightly before) first tap
+****** set loop sync point (aka beat 1) to first beat where there was no tap
+******* (find-transient-around phantom-beat (measure-to-ms 1/16))
+****** start tempo tracking within x % of tapped tempo
+****** visualize what loop length would be if key would be pressed now
+*** have tempo
+** recording first loop
+** something playing
+*** no tempo
+*** have tempo
