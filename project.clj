@@ -5,7 +5,8 @@
             :url "http://www.gnu.org/licenses/gpl-2.0.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [overtone "0.10.1"]
-                 [quil "2.4.0"]]
+                 [quil "2.4.0"]
+                 [org.clojars.semperos/automat "0.2.0-alpha3"]]
   :main ^:skip-aot openloop.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})

@@ -4,6 +4,7 @@
   (require [quil.core :as q])
   )
 
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
@@ -20,7 +21,7 @@
       (wait-until-mixer-booted)
       (println (status))
       (load-file "src/openloop/constants.clj")
-      (load-file "src/openloop/fsm.clj")
+      (load-file "src/openloop/states.clj")
       ;; (load-file "src/openloop/ui.clj")
       (load-file "src/openloop/synths.clj")
       (load-file "src/openloop/init.clj")
