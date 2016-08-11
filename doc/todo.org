@@ -121,13 +121,14 @@
 *** very similar to recording a master loop with known tempo.
 **** set loop start at first sound after start rec
 
-* modes
+* modes / states
+maybe use https://github.com/ztellman/automat
 
 ** nothing playing or recording
 *** no tempo
 **** hit loop-button
 ***** start recording first loop
-**** hit tap
+**** hit tap-tempo
 ***** count in (aka tap tempo)
 ****** at 2nd tap button starts flashing in tempo
 ****** set loop start at first sound after (or slightly before) first tap
@@ -140,3 +141,13 @@
 ** something playing
 *** no tempo
 *** have tempo
+**** keep playing
+**** record new
+**** overdub
+**** replace
+**** replace and extend
+***** replaces as normal, but extends the loop when the end is reached
+**** cut-mode
+***** from freewheeling: play the loops like a keyboard
+****** don't retrigger, loops stay synced
+****** loop trigger hold-button functionality (see features)
