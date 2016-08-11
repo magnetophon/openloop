@@ -8,18 +8,11 @@
 *** song sections
 **** go to 'future mode', select actions (rec, play) per loop
 **** on next section-start-timer: apply
-
 *** loop trigger hold-button functionality:
-** for master loop
 **** if playing: stop
 ***** if button held: start again on release, else remain  stopped
 **** if stopped: play
 ***** if button held: stop playing on release, else remain playing
-*** dynamic realign:
-**** if the loop is recorded with an upbeat, when restarting, it would normally start in the middle.
-**** This is not musically correct so we set the sync point to the 1st beat of the loop
-***** use  find-transient-around
-***** also needed to sync lfo's and such.
 *** dynamically set start position, independant from length
 **** after you record a loop, you decide you want to play it not from bar 1 to 4
 **** but from bar 0.5 to bar 4.5, or from -0.5 to 3.5.
@@ -28,6 +21,13 @@
 
 *** find-transient-around [centre range]:
 **** look 'range' ms before and after 'centre' for a transient.
+
+** for master loop
+*** dynamic realign:
+**** if the loop is recorded with an upbeat, when restarting, it would normally start in the middle.
+**** This is not musically correct so we set the sync point to the 1st beat of the loop
+***** use  find-transient-around
+***** also needed to sync lfo's and such.
 
 
 * sound fx / presets
@@ -76,8 +76,6 @@
 ** disk state (for saving)
 *** all of static
 *** all of per loop
-**
-***
 
 * user interface:
 ** ui input elements
