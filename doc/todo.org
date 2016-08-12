@@ -66,12 +66,13 @@
 *** downbeat (for phase)
 *** chord ?
 ** per loop (in RAM)
-*** input audio
-*** output audio
+*** dry audio
+*** wet audio
 *** settings/automation OSC
 *** FX chain
-*** start sample
-*** sync point
+*** source audio array
+**** keep track of which buffer sample comes from which source sample
+**** needed for undo and dynamically changing where the 1 is
 *** length
 ** disk state (for saving)
 *** all of static
@@ -155,11 +156,35 @@ maybe use https://github.com/ztellman/automat
 * implementation
 
 ** do/undo/redo loop change
+*** examples
+**** new loop ends recording
+**** overdub / replace
+**** automation change
 *** do
-**** add event data to state-list
-***** processed-time-stamp
+**** add event data to state-list (or state tree)
+***** loop nr and channel nrs within it
+****** what do we overwrite
+******* this is always one of the nr-loops buffers. one or more of:
+******** dry audio
+******** FX audio
+******** osc  automation data
 ***** start and end in loop
-***** loop nr
+****** where do we overwrite
 ***** start and end in source
-***** source nr
-**** overwrite audio/osc from in and output to buffer
+***** array of prev sources
+****** each loop has a time-stamped list of where in the source the data came from
+******* example
+******** sample 0 to 99 are from source sample 42 trough 141
+******** sample 100 to 200 are from source sample 342 trough 441
+******** and so on
+***** processed-time-stamp
+****** when will we overwrite
+***** history-nr
+****** so we know where to go in the list/tree for the next undo orredo
+**** overwrite audio/osc in buffer
+*** undo
+**** get current history-nr
+**** get loop nr, start and end, prev-sources-array
+**** overwrite audio/osc in buffer
+**** append new history-nr to list/tree
+***** that would be the number of the previous one.
