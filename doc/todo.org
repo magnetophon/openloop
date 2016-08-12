@@ -151,3 +151,15 @@ maybe use https://github.com/ztellman/automat
 ***** from freewheeling: play the loops like a keyboard
 ****** don't retrigger, loops stay synced
 ****** loop trigger hold-button functionality (see features)
+
+* implementation
+
+** do/undo/redo loop change
+*** do
+**** add event data to state-list
+***** processed-time-stamp
+***** start and end in loop
+***** loop nr
+***** start and end in source
+***** source nr
+**** overwrite audio/osc from in and output to buffer
