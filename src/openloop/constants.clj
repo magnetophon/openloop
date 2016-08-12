@@ -1,4 +1,4 @@
-(ns openloop.constants )
+(ns openloop.core )
 
 ;; set some constants
 (def max-loop-seconds 30)

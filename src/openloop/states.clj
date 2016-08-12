@@ -3,10 +3,11 @@
    ;; [automat.viz :refer (view)]
    ;; [automat.core :as a]
    [reduce-fsm :as fsm]
-   ))
+   [openloop.constants]))
 
 (defn inc-val [val & _] (inc val))
 
+(fsm-inc)
 (fsm/defsm-inc loop-fsm
   [[:idle
     :loop-btn -> :rec-master
@@ -34,15 +35,34 @@
 (:value @fsm-state)
 (:state @fsm-state)
 
+(defn fsm-step
+  ""
+  []
+  )
+
+
 (swap! fsm-state fsm/fsm-event :loop-btn)
 (swap! fsm-state fsm/fsm-event :tap)
 (swap! fsm-state fsm/fsm-event :timeout)
 (swap! fsm-state fsm/fsm-event :other-loop-btn)
 (loop-fsm 0)
 
+openloop.constants
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; define input state
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def inputs
+  {:loop-btns (boolean-array nr-loops nil)
+   :tap (boolean nil)
+   :timeout (boolean nil)
+   })
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; define loop data
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def all-loops [ a-loop ]) ; a list of all loops contributing to the output.
 ;; a-loop has everything we need to:
 ;;    - play a loop
+;;    - change a loop
 ;;    - reconstruct it from dry signal
 ;;    - undo / redo
 (def a-loop {
@@ -76,6 +96,7 @@
    :transform nil ; what function did we use to get from the osc sources to the output
    })
 
+(pprint loop0)
 (def loop0 a-loop)
 (:loop-nr loop0)
 (:audio loop0)
