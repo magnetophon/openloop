@@ -159,6 +159,7 @@ maybe use https://github.com/ztellman/automat
 *** examples
 **** new loop ends recording
 **** overdub / replace
+**** change start point
 **** automation change
 *** do
 **** add event data to state-list (or state tree)

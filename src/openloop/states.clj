@@ -76,12 +76,38 @@
    :transform nil ; what function did we use to get from the osc sources to the output
    })
 
-;; (defrecord A-Loop [loop-nr prev-sources])
-(def loop0 (a-loop))
+(def loop0 a-loop)
 (:loop-nr loop0)
-(:prev-sources loop0)
-( loop0)
-(assoc)
+(:audio loop0)
+(:audio
+ (:prev-sources loop0))
+(:osc
+ (:prev-sources loop0))
+
+
+(def PORT 4242)
+
+                                        ; start a server and create a client to talk with it
+(def server (osc-server PORT))
+(def client (osc-client "localhost" PORT))
+
+                                        ; Register a handler function for the /test OSC address
+                                        ; The handler takes a message map with the following keys:
+                                        ;   [:src-host, :src-port, :path, :type-tag, :args]
+(osc-handle server "/test" (fn [msg] (println "MSG: " msg)))
+
+                                        ; send it some messages
+(doseq [val (range 10)]
+  (osc-send client "/test" "i" val "some more"))
+
+(Thread/sleep 1000)
+
+                                        ;remove handler
+(osc-rm-handler server "/test")
+
+                                        ; stop listening and deallocate resources
+(osc-close client)
+(osc-close server)
 
 
 ;; maps
