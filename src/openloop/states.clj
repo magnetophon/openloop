@@ -1,5 +1,6 @@
 (ns openloop.core
   (require
+   [clojure.spec :as s]
    ;; [automat.viz :refer (view)]
    ;; [automat.core :as a]
    [reduce-fsm :as fsm]
@@ -7,7 +8,6 @@
 
 (defn inc-val [val & _] (inc val))
 
-(fsm-inc)
 (fsm/defsm-inc loop-fsm
   [[:idle
     :loop-btn -> :rec-master
@@ -48,6 +48,29 @@
 (loop-fsm 0)
 
 openloop.constants
+
+(s/def ::suit #{:club :diamond :heart :spade})
+
+(s/def ::inputs
+  (s/cat
+   :loop-btns nil
+   :tap nil
+   :timeout nil ))
+
+(s/def ::all-loops
+  (s/+ (s/cat :a-loop ::loop-type)))
+
+(s/exercise ::all-loops 2)
+
+(s/def ::loop-type (s/cat :loop-nr pos-int?
+                          :audio ::loop-audio-type))
+(s/def ::loop-audio-type (s/cat :dry-audio ::audio-type
+                                :wet-audio ::audio-type))
+
+(s/def ::audio-type  gsnumber?)
+
+(s/exercise ::loop-type 20)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; define input state
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
