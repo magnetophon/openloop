@@ -3,6 +3,7 @@
    [clojure.spec :as s]
    ;; [automat.viz :refer (view)]
    ;; [automat.core :as a]
+   ;; [clojure.core.async :as as]
    [reduce-fsm :as fsm]
    [openloop.constants]))
 
@@ -60,17 +61,43 @@ openloop.constants
 (s/def ::all-loops
   (s/+ (s/cat :a-loop ::loop-type)))
 
-(s/exercise ::all-loops 2)
+(pprint (s/exercise ::all-loops 2))
 
-(s/def ::loop-type (s/cat :loop-nr pos-int?
-                          :audio ::loop-audio-type))
+(s/def ::loop-type (s/cat
+                    :length pos-int?
+                    :audio ::loop-audio-type
+                    :FX ::FX-type
+                    :osc ::loop-osc-type
+                    :prev-sources ::prev-sources-type ))
+
 (s/def ::loop-audio-type (s/cat :dry-audio ::audio-type
                                 :wet-audio ::audio-type))
+;; from https://github.com/candera/dynne
+;; Thanks to Rich Hickey for his suggestion to rewrite dynne in terms of sequences of double arrays, which led to a massive increase in performance.
 
-(s/def ::audio-type  gsnumber?)
+;; just 2 samples max loop length while designing the data structures
+(def max-loop-length 2)
+(s/def ::audio-type (s/coll-of ::mono-audio-type :kind vector? :count nr-chan))
+(s/def ::mono-audio-type (s/every double? :kind vector? :count max-loop-length ))
+;; (s/def ::mono-audio-type double-array?)
 
-(s/exercise ::loop-type 20)
+(s/def ::FX-type int?)
+(s/def ::loop-osc-type int?)
+(s/def ::prev-sources-type (s/cat
+                            :audio ::prev-audio-type
+                            :osc ::prev-osc-type))
+(s/def ::prev-audio-type int? )
+(s/def ::prev-osc-type int? )
+(s/conform ::prev-audio-type (sorted-set :a :z :c :d))
 
+(println "oooooooooooooooooooooooooooo")
+(pprint (s/exercise ::loop-type 4))
+
+(let [rows (Integer/parseInt (read-line))
+      cols (Integer/parseInt (read-line))
+      a (to-array-2d (repeat rows (repeat cols nil)))]
+  (aset a 0 0 12)
+  (println "Element at 0,0:" (aget a 0 0)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; define input state
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
