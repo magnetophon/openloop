@@ -1,6 +1,7 @@
 (ns openloop.core
   (require
    [clojure.spec :as s]
+   [clojure.spec.gen :as gen]
    ;; [automat.viz :refer (view)]
    ;; [automat.core :as a]
    ;; [clojure.core.async :as as]
@@ -75,8 +76,8 @@ openloop.constants
 ;; from https://github.com/candera/dynne
 ;; Thanks to Rich Hickey for his suggestion to rewrite dynne in terms of sequences of double arrays, which led to a massive increase in performance.
 
-;; just 2 samples max loop length while designing the data structures
-(def max-loop-length 2)
+;; max loop length is just a few samples while designing the data structures
+(def max-loop-length 8)
 (s/def ::audio-type (s/coll-of ::mono-audio-type :kind vector? :count nr-chan))
 (s/def ::mono-audio-type (s/every double? :kind vector? :count max-loop-length ))
 ;; (s/def ::mono-audio-type double-array?)
@@ -86,12 +87,59 @@ openloop.constants
 (s/def ::prev-sources-type (s/cat
                             :audio ::prev-audio-type
                             :osc ::prev-osc-type))
-(s/def ::prev-audio-type int? )
-(s/def ::prev-osc-type int? )
-(s/conform ::prev-audio-type (sorted-set :a :z :c :d))
+(s/def ::prev-audio-indexes-type (s/coll-of ::loop-index-type :min-count 0, :max-count max-loop-length :distinct true :into #{} ))
+(s/def ::prev-audio-indexes-type (s/coll-of ::loop-index-type :min-count 0, :max-count max-loop-length :distinct true ))
+(s/def ::prev-audio-type (s/coll-of ::audio-block-type, :count (count ), :max-count max-loop-length :distinct true :into #{} ))
+(s/def ::prev-audio-type (s/* ::audio-block-type))
+(s/int-in-range? 0 8 7)
+
+(s/def ::audio-block-type (s/cat
+                           :start-in-loop ::prev-audio-indexes-type))
+                           ;; :length ::loop-lenghth-type
+                           ;; :start-source pos-int?))
+
+(s/def ::loop-index-type (s/int-in 0 max-loop-length))
+;; (s/def ::loop-index-type (s/spec #(s/int-in-range? 0 max-loop-length %)))
+(s/def ::loop-length-type (s/int-in 1 (inc  max-loop-length)))
 
 (println "oooooooooooooooooooooooooooo")
+(pprint (s/exercise ::prev-audio-type max-loop-length))
+(s/describe ::prev-audio-type)
+(pprint (s/exercise ::loop-length-type 20))
+(pprint (s/exercise ::audio-block-type max-loop-length))
+(pprint (s/exercise ::prev-audio-indexes-type max-loop-length))
+(apply sorted-set #{0 1 4 6 2 8})
+(s/explain ::prev-audio-type [{:start-in-loop 3, :length 7, :start-source 1}
+                              {:start-in-loop 0, :length 2, :start-source 4}
+                              {:start-in-loop 2, :length 2, :start-source 12}] )
+(s/explain ::loop-index-type 2)
+
+(s/def ::prev-osc-type int? )
+
 (pprint (s/exercise ::loop-type 4))
+
+
+(gen/generate (s/gen ::prev-audio-indexes-type ))
+
+(def email-regex #"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$")
+(s/def ::email-type (s/and string? #(re-matches email-regex %)))
+
+(s/def ::acctid int?)
+(s/def ::first-name string?)
+(s/def ::last-name string?)
+(s/def ::email ::email-type)
+
+(s/def ::person (s/keys :req [::first-name ::last-name]
+                        ))
+
+(pprint (s/exercise ::person 10))
+
+
+(s/def ::kws (s/with-gen (s/and keyword? #(= (namespace %) "my.domain"))
+               #(s/gen ::person)))
+(s/valid? ::kws :my.domain/name)  ;; true
+(gen/sample (s/gen ::kws))
+
 
 (let [rows (Integer/parseInt (read-line))
       cols (Integer/parseInt (read-line))
