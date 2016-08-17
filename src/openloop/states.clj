@@ -1,7 +1,7 @@
 (ns openloop.core
   (require
    [clojure.spec :as s]
-   [clojure.spec.gen :as gen]
+   [clojure.test.check.generators :as gen]
    ;; [automat.viz :refer (view)]
    ;; [automat.core :as a]
    ;; [clojure.core.async :as as]
@@ -87,16 +87,25 @@ openloop.constants
 (s/def ::prev-sources-type (s/cat
                             :audio ::prev-audio-type
                             :osc ::prev-osc-type))
-(s/def ::prev-audio-indexes-type (s/coll-of ::loop-index-type :min-count 0, :max-count max-loop-length :distinct true :into #{} ))
-(s/def ::prev-audio-indexes-type (s/coll-of ::loop-index-type :min-count 0, :max-count max-loop-length :distinct true ))
+(s/def ::kws (s/with-gen (s/and keyword? #(= (namespace %) "my.domain"))
+               #(s/gen #{:my.domain/name :my.domain/occupation :my.domain/id})))
+(s/valid? ::kws :my.domain/name)  ;; true
+(gen/sample (s/gen ::kws))
+
+(s/def ::prev-audio-indexes-type (s/with-gen
+                                   (s/coll-of ::loop-index-type :min-count 0, :max-count max-loop-length :distinct true :into #{} )
+                                   #(gen/sorted-set (s/gen ::loop-index-type) ) ))
+
+(pprint (gen/sample (s/gen ::prev-audio-indexes-type) 20))
+
 (s/def ::prev-audio-type (s/coll-of ::audio-block-type, :count (count ), :max-count max-loop-length :distinct true :into #{} ))
 (s/def ::prev-audio-type (s/* ::audio-block-type))
 (s/int-in-range? 0 8 7)
 
 (s/def ::audio-block-type (s/cat
-                           :start-in-loop ::prev-audio-indexes-type))
-                           ;; :length ::loop-lenghth-type
-                           ;; :start-source pos-int?))
+                           :start-in-loop ::prev-audio-indexes-type
+                           :length ::loop-length-type
+                           :start-source pos-int?))
 
 (s/def ::loop-index-type (s/int-in 0 max-loop-length))
 ;; (s/def ::loop-index-type (s/spec #(s/int-in-range? 0 max-loop-length %)))
@@ -107,7 +116,7 @@ openloop.constants
 (s/describe ::prev-audio-type)
 (pprint (s/exercise ::loop-length-type 20))
 (pprint (s/exercise ::audio-block-type max-loop-length))
-(pprint (s/exercise ::prev-audio-indexes-type max-loop-length))
+(pprint (s/exercise ::prev-audio-indexes-type 40))
 (apply sorted-set #{0 1 4 6 2 8})
 (s/explain ::prev-audio-type [{:start-in-loop 3, :length 7, :start-source 1}
                               {:start-in-loop 0, :length 2, :start-source 4}
