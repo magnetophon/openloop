@@ -155,6 +155,15 @@ maybe use https://github.com/ztellman/automat
 
 * implementation
 
+**
+
+** inspirational libs:
+*** http://onloop.net/tenor/
+**** Generating accessible music with Clojure and Overtone (and a primer in Music theory)
+*** https://github.com/candera/dynne
+**** A Clojure library for working with audio.
+*** http://sccode.org/1-51A
+**** Looping sampler with crossfading in supercollider
 ** do/undo/redo loop change
 *** examples
 **** new loop ends recording
