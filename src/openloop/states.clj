@@ -70,7 +70,7 @@ openloop.constants
                     :audio ::loop-audio-type
                     :FX ::FX-type
                     :osc ::loop-osc-type
-                    :modification-stack ::modification-stack-type ))
+                    :sources ::sources-type ))
 
 (s/def ::loop-audio-type (s/cat :dry-audio ::buffer-nr-type
                                 :wet-audio ::buffer-nr-type))
@@ -86,36 +86,38 @@ openloop.constants
 ;; (s/def ::mono-audio-type double-array?)
 
 (s/def ::FX-type int?)
-(s/def ::loop-osc-type int?)
-(s/def ::modification-stack-type (s/cat
-                                  :audio ::audio-modification-stack-type
-                                  :osc ::osc-modification-stack-type))
+(s/def ::loop-osc-type int?) ; placeholder for the osc data of a loop
+(s/def ::sources-type (s/cat
+                       :audio ::audio-sources-type
+                       :osc ::osc-sources-type))
 
 ;; (s/def ::prev-audio-indexes-type (s/with-gen
 
 ;; (pprint (gen/sample (s/gen ::prev-audio-indexes-type) 20))
 
-;; (s/def ::audio-modification-stack-type  (s/coll-of ::audio-modification-type, :count (count ), :max-count max-loop-length :distinct true :into #{} ))
-;; (s/def ::audio-modification-stack-type  (s/* ::audio-modification-type))
+;; (s/def ::audio-sources-type   (s/coll-of ::audio-block-type, :count (count ), :max-count max-loop-length :distinct true :into #{} ))
+;; (s/def ::audio-sources-type   (s/* ::audio-block-type))
 
+;; maybe needed for performance, so it's easier to know which nodes to replace or change on updates.
 (s/def ::audio-dest-indexes-type (s/coll-of ::loop-index-type, :min-count 0, :max-count max-loop-length :distinct true :into #{} ))
 
-(s/def ::audio-modification-type (s/cat ; a modification to the audio in a loop buffer
-                                  :dest-index ::loop-index-type ; where does the new audio go?
-                                  ;; :length ::loop-length-type ; how many samples do we replace?
-                                  :src-index pos-int? ; where does the new audio come from?
+(s/def ::audio-block-type (s/cat ; a continuous block of audio in a loop buffer
+                           ;; :dest-index ::loop-index-type ; where does the new audio go?  ; superfluous, since we store this object in a map with dest-indexes as keys
+                           ;; :length ::loop-length-type ; how many samples do we replace?  ; can be deduced from the value of the next dst-index
+                           :src-index pos-int? ; where does the new audio come from?
                                         ; to be precise: which sample in the src corresponds to the 0'th sample in the buffer
-                                  :x-fade-data ::x-fade-data-type ; how do we crossfade from one to the next?
-                                  ))
+                           :x-fade-data ::x-fade-data-type ; how do we crossfade from one to the next?
+                           ))
 
 (s/def ::x-fade-data-type int?)
 
-;; (s/def ::audio-modification-stack-type  (s/map-of pos-int? ::audio-modification-type))
-;; (s/def ::audio-modification-stack-type (s/coll-of ::audio-modification-type, :max-count max-undo-nr ))
-(s/def ::audio-modification-stack-type (s/map-of ::loop-index-type ::audio-modification-type, :max-count max-undo-nr ))
+;; (s/def ::audio-sources-type   (s/map-of pos-int? ::audio-block-type))
+;; (s/def ::audio-sources-type  (s/coll-of ::audio-block-type, :max-count max-undo-nr ))
+(s/def ::audio-sources-type  (s/map-of ::loop-index-type ::audio-block-type, :max-count max-loop-length ))
+
 
 (println "oooooooooooooooooooooooooooo")
-(pprint (gen/generate (s/gen ::audio-modification-stack-type  )))
+(pprint (gen/generate (s/gen ::audio-sources-type   )))
 (pprint (s/exercise ::loop-type  2))
 (s/def ::int-map (s/map-of keyword? integer?))
 (gen/sample (s/gen ::int-map))
@@ -125,12 +127,12 @@ openloop.constants
 ;; (s/def ::loop-index-type (s/spec #(s/int-in-range? 0 max-loop-length %)))
 (s/def ::loop-length-type (s/int-in 1 (inc  max-loop-length)))
 
-(pprint (s/exercise ::audio-modification-stack-type  max-loop-length))
-(s/describe ::audio-modification-stack-type )
+(pprint (s/exercise ::audio-sources-type   max-loop-length))
+(s/describe ::audio-sources-type  )
 (pprint (s/exercise ::loop-length-type 20))
 ;; (pprint (s/exercise ::prev-audio-indexes-type 40))
 
-(s/def ::osc-modification-stack-type int? )
+(s/def ::osc-sources-type int? )
 
 (pprint (s/exercise ::loop-type 4))
 
