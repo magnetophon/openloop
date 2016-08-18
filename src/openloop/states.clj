@@ -62,6 +62,7 @@ openloop.constants
 (s/def ::all-loops
   (s/+ (s/cat :a-loop ::loop-type)))
 
+(println "000000000000000000000000000000000")
 (pprint (s/exercise ::all-loops 2))
 
 (s/def ::loop-type (s/cat
@@ -71,16 +72,17 @@ openloop.constants
                     :osc ::loop-osc-type
                     :modification-stack ::modification-stack-type ))
 
-(s/def ::loop-audio-type (s/cat :dry-audio ::audio-type
-                                :wet-audio ::audio-type))
+(s/def ::loop-audio-type (s/cat :dry-audio ::buffer-nr-type
+                                :wet-audio ::buffer-nr-type))
 ;; from https://github.com/candera/dynne
 ;; Thanks to Rich Hickey for his suggestion to rewrite dynne in terms of sequences of double arrays, which led to a massive increase in performance.
 
 ;; max loop length is just a few samples while designing the data structures
 (def max-loop-length 8)
 (def max-undo-nr 10)
-(s/def ::audio-type (s/coll-of ::mono-audio-type :kind vector? :count nr-chan))
-(s/def ::mono-audio-type (s/every double? :kind vector? :count max-loop-length ))
+(s/def ::buffer-nr-type (s/int-in 0 (* 2 nr-loops)))
+;; (s/def ::audio-type (s/coll-of ::mono-audio-type :kind vector? :count nr-chan))
+;; (s/def ::mono-audio-type (s/every double? :kind vector? :count max-loop-length ))
 ;; (s/def ::mono-audio-type double-array?)
 
 (s/def ::FX-type int?)
@@ -96,13 +98,21 @@ openloop.constants
 ;; (s/def ::audio-modification-stack-type  (s/coll-of ::audio-modification-type, :count (count ), :max-count max-loop-length :distinct true :into #{} ))
 ;; (s/def ::audio-modification-stack-type  (s/* ::audio-modification-type))
 
+(s/def ::audio-dest-indexes-type (s/coll-of ::loop-index-type, :min-count 0, :max-count max-loop-length :distinct true :into #{} ))
+
 (s/def ::audio-modification-type (s/cat ; a modification to the audio in a loop buffer
                                   :dest-index ::loop-index-type ; where does the new audio go?
-                                  :length ::loop-length-type ; how many samples do we replace?
-                                  :src-index pos-int?)) ; where does the new audio come from?
+                                  ;; :length ::loop-length-type ; how many samples do we replace?
+                                  :src-index pos-int? ; where does the new audio come from?
+                                        ; to be precise: which sample in the src corresponds to the 0'th sample in the buffer
+                                  :x-fade-data ::x-fade-data-type ; how do we crossfade from one to the next?
+                                  ))
+
+(s/def ::x-fade-data-type int?)
 
 ;; (s/def ::audio-modification-stack-type  (s/map-of pos-int? ::audio-modification-type))
-(s/def ::audio-modification-stack-type (s/coll-of ::audio-modification-type, :max-count max-undo-nr ))
+;; (s/def ::audio-modification-stack-type (s/coll-of ::audio-modification-type, :max-count max-undo-nr ))
+(s/def ::audio-modification-stack-type (s/map-of ::loop-index-type ::audio-modification-type, :max-count max-undo-nr ))
 
 (println "oooooooooooooooooooooooooooo")
 (pprint (gen/generate (s/gen ::audio-modification-stack-type  )))
