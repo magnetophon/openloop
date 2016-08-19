@@ -24,7 +24,7 @@
   (s/coll-of ::loop-type :count nr-loops))
 
 (println "000000000000000000000000000000000")
-(pprint (drop 20 (s/exercise ::loop-type 21)))
+(pprint (drop 20 (s/exercise ::all-loops-type 21)))
 
 ;; a-loop has everything we need to:
 ;;    - play a loop
@@ -107,17 +107,33 @@
                                         ; optional vector of additional OSC input values or streams, used to calculte the output OSC stream
                            :sources-vector (s/coll-of ::osc-source-type, :max-count max-sources-nr)
                                         ; optional vector of functions that combines the above sources into the output
-                           :functions-vector (s/coll-of ::osc-function-type, :max-count max-sources-nr)
+                           :function ::osc-function-type
                            ))
 
 (s/def ::osc-params-type pos-int?) ; placeholder
 (s/def ::osc-source-type pos-int?) ; placeholder
-(s/def ::osc-function-type pos-int?) ; placeholder
+
+(s/def ::osc-function-type (s/with-gen (s/and keyword? #(= (namespace %) "openloop.osc_functions"))
+                             #(s/gen #{:openloop.osc_functions/sum :openloop.osc_functions/example :openloop.osc_functions/filter})))
 
 
-(s/def ::osc-function-type (s/and keyword? #(= (namespace %) "openloop.osc_functions")))
-(s/valid? ::osc-function-type :my.domain/name) ;; true
-(gen/sample (s/gen ::osc-function-type)) ;; unlikely we'll generate useful keywords this way
+;; (s/def ::osc-function-type (s/with-gen (s/and keyword? #(= (namespace %) "openloop.osc_functions"))
+;;                              (s/gen  osc-function-gen)))
+(pprint (s/exercise ::all-loops-type 1))
+
+
+;; (s/def ::osc-function-type (s/with-gen (s/and keyword? #(= (namespace %) "openloop.osc_functions"))
+;;                              #(sgen/fmap (fn [s1] (symbol "openloop.osc_functions" s1))
+;;                                          (sgen/such-that #(not= s1 "")
+;;                                                          (sgen/string-alphanumeric)))))
+
+;; (s/def ::hello
+;;   (s/with-gen #(clojure.string/includes? % "hello")
+
+(s/valid? ::osc-function-type :openloop.osc_functions/name)  ;; true
+(gen/sample (s/gen ::osc-sources-type))
+(s/valid? ::osc-function-type :openloop.osc_functions/name) ;; true
+(gen/sample (s/gen ::osc-function-type))
 
 (def osc-function-gen (sgen/fmap #(symbol "openloop.osc_functions" %)
                                  (sgen/such-that #(not= % "")
@@ -144,11 +160,6 @@
 
 ;; (pprint (s/exercise ::person 10))
 
-
-;; (s/def ::kws (s/with-gen (s/and keyword? #(= (namespace %) "my.domain"))
-;;                #(s/gen ::person)))
-;; (s/valid? ::kws :my.domain/name)  ;; true
-;; (gen/sample (s/gen ::kws))
 
 
 ;; (let [rows (Integer/parseInt (read-line))
