@@ -1,7 +1,5 @@
 (ns openloop.core
   (require
-   [clojure.spec :as s]
-   [clojure.test.check.generators :as gen]
    ;; [automat.viz :refer (view)]
    ;; [automat.core :as a]
    ;; [clojure.core.async :as as]
