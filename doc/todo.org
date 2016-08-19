@@ -155,7 +155,16 @@ maybe use https://github.com/ztellman/automat
 
 * implementation
 
+
 **
+
+** two sets of buffers in scsynth:
+*** currently playing
+**** can't be changed by sclang as long as it's playing
+**** when it ends, scsynth will autonomously switch to:
+*** next iteration
+**** sclang can take it's time to change this, since it knows when it will be used.
+
 
 ** inspirational libs:
 *** http://onloop.net/tenor/
