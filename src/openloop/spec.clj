@@ -24,7 +24,8 @@
   (s/coll-of ::loop-type :count nr-loops))
 
 (println "000000000000000000000000000000000")
-(pprint (drop 20 (s/exercise ::all-loops-type 21)))
+(pprint (drop 20 (s/exercise ::loop-type 21)))
+;; (pprint (drop 20 (s/exercise ::all-loops-type 21)))
 
 ;; a-loop has everything we need to:
 ;;    - play a loop
@@ -53,7 +54,7 @@
 ;; (s/def ::audio-type (s/coll-of ::mono-audio-type :count nr-chan))
 ;; (s/def ::mono-audio-type (s/every double? :count max-loop-length ))
 (println "000000000000000000000000000000000")
-(pprint (s/exercise ::FX-type 4))
+;; (pprint (s/exercise ::FX-type 4))
 
 
 (s/def ::FX-type (s/cat; the FX chain needed to create the wet audio
@@ -95,7 +96,7 @@
 
 (println "oooooooooooooooooooooooooooo")
 ;; (pprint (gen/generate (s/gen ::audio-sources-type   )))
-(pprint (s/exercise ::all-loops-type 4))
+;; (pprint (s/exercise ::all-loops-type 4))
 
 
 (s/def ::loop-index-type (s/int-in 0 max-loop-length))
@@ -106,7 +107,7 @@
                            :initial-values ::osc-params-type ; a dump of all parameters and values at their initial state
                                         ; optional vector of additional OSC input values or streams, used to calculte the output OSC stream
                            :sources-vector (s/coll-of ::osc-source-type, :max-count max-sources-nr)
-                                        ; optional vector of functions that combines the above sources into the output
+                                        ; optional function that combines the above sources into the output
                            :function ::osc-function-type
                            ))
 
@@ -119,7 +120,7 @@
 
 ;; (s/def ::osc-function-type (s/with-gen (s/and keyword? #(= (namespace %) "openloop.osc_functions"))
 ;;                              (s/gen  osc-function-gen)))
-(pprint (s/exercise ::all-loops-type 1))
+;; (pprint (s/exercise ::all-loops-type 1))
 
 
 ;; (s/def ::osc-function-type (s/with-gen (s/and keyword? #(= (namespace %) "openloop.osc_functions"))
@@ -131,41 +132,8 @@
 ;;   (s/with-gen #(clojure.string/includes? % "hello")
 
 (s/valid? ::osc-function-type :openloop.osc_functions/name)  ;; true
-(gen/sample (s/gen ::osc-sources-type))
-(s/valid? ::osc-function-type :openloop.osc_functions/name) ;; true
-(gen/sample (s/gen ::osc-function-type))
 
 (def osc-function-gen (sgen/fmap #(symbol "openloop.osc_functions" %)
                                  (sgen/such-that #(not= % "")
                                                  (sgen/string-alphanumeric))))
 (gen/sample osc-function-gen 5)
-
-
-;; (s/map-of ::loop-index-type ::osc-block-type, :max-count max-sources-nr ))
-
-;; (pprint (s/exercise ::loop-type 4))
-
-
-
-;; (def email-regex #"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$")
-;; (s/def ::email-type (s/and string? #(re-matches email-regex %)))
-
-;; (s/def ::acctid int?)
-;; (s/def ::first-name string?)
-;; (s/def ::last-name string?)
-;; (s/def ::email ::email-type)
-
-;; (s/def ::person (s/keys :req [::first-name ::last-name]
-;;                         ))
-
-;; (pprint (s/exercise ::person 10))
-
-
-
-;; (let [rows (Integer/parseInt (read-line))
-;;       cols (Integer/parseInt (read-line))
-;;       a (to-array-2d (repeat rows (repeat cols nil)))]
-;;   (aset a 0 0 12)
-;;   (println "Element at 0,0:" (aget a 0 0)))
-
-;; (s/def ::suit #{:club :diamond :heart :spade})
