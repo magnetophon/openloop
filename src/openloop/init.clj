@@ -1,7 +1,7 @@
 (ns openloop.core
-  (use [overtone.core]
-       [openloop.constants]
-       [openloop.synths]))
+  (require [overtone.core]
+           [openloop.constants]
+           [openloop.synths]))
 
 (defn groups
   "define groups"
