@@ -3,29 +3,22 @@
    [clojure.spec :as s]
    [clojure.test.check.generators :as gen]
    [clojure.spec.gen :as sgen]
+   [clojure.spec.test :as stest]
    [openloop.constants]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; define input state
+;; spec  input state
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (s/def ::inputs
   (s/cat
-   :loop-btns nil
+   :loop-btn-downs nil
    :tap nil
    :timeout nil ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; define loop data
+;; spec  loop data
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(s/def ::all-loops-type  ; a vector of all loops contributing to the output.
-  ;; (s/+ (s/cat :a-loop ::loop-type)))
-  (s/coll-of ::loop-type :count nr-loops))
-
-(println "000000000000000000000000000000000")
-(pprint (drop 20 (s/exercise ::loop-type 21)))
-;; (pprint (drop 20 (s/exercise ::all-loops-type 21)))
 
 ;; a-loop has everything we need to:
 ;;    - play a loop
@@ -69,13 +62,6 @@
                        :audio ::audio-sources-type ; where did the dry audio come from
                        :osc ::osc-sources-type)) ; which combination of OSC input streams and calculations lead to the current automation of this loop
 
-
-
-;; makes them distinct over all content, so index is not necessarily distinct:
-;; (s/def ::audio-sources-type   (s/coll-of ::audio-block-type, :count (count ), :max-count max-loop-length :distinct true :into #{} ))
-;; (s/def ::audio-sources-type   (s/* ::audio-block-type))
-
-
 (s/def ::audio-block-type (s/cat  ; a block of source audio mapped to a block of buffer audio
                            ;; :dest-index ::loop-index-type ; where does the new audio go?  ; superfluous, since we store this object in a map with dest-indexes as keys
                            ;; :length ::loop-length-type ; how many samples do we replace?  ; can be deduced from the value of the next dst-index
@@ -86,30 +72,32 @@
 
 (s/def ::x-fade-data-type (s/cat
                            :length (s/int-in 0 max-x-fade-length))) ; for now, just indicate how long the crossfade is in ms
-
 ;; maybe needed for performance, so it's easier to know which nodes to replace or change on updates.
 ;; (s/def ::audio-dest-indexes-type (s/coll-of ::loop-index-type, :min-count 0, :max-count max-loop-length :distinct true :into #{} ))
 
 ;; the keys represent the start index in the loop where the block should go.
-(s/def ::audio-sources-type  (s/map-of ::loop-index-type ::audio-block-type, :max-count max-sources-nr ))
-
-
-(println "oooooooooooooooooooooooooooo")
-;; (pprint (gen/generate (s/gen ::audio-sources-type   )))
-;; (pprint (s/exercise ::all-loops-type 4))
-
+(s/def ::audio-sources-type
+  (s/with-gen
+    (s/map-of ::loop-index-type ::audio-block-type :max-count max-sources-nr )
+    #(gen/fmap (fn [m]
+                 (into (sorted-map) m))
+               (gen/map (s/gen ::loop-index-type ) (s/gen ::audio-block-type ))))
+  )
 
 (s/def ::loop-index-type (s/int-in 0 max-loop-length))
 ;; (s/def ::loop-index-type (s/spec #(s/int-in-range? 0 max-loop-length %)))
 (s/def ::loop-length-type (s/int-in 1 (inc  max-loop-length)))
 
-(s/def ::osc-sources-type (s/cat
-                           :initial-values ::osc-params-type ; a dump of all parameters and values at their initial state
+(s/def ::osc-sources-type
+  (s/cat
+   :initial-values ::osc-params-type ; a dump of all parameters and values at their initial state
                                         ; optional vector of additional OSC input values or streams, used to calculte the output OSC stream
-                           :sources-vector (s/coll-of ::osc-source-type, :max-count max-sources-nr)
+   ;; :sources-vector (s/coll-of ::osc-source-type, :max-count max-sources-nr)
+                                        ; for now, we limit the nr of sources, since we're not using it yet
+   :sources-vector (s/coll-of ::osc-source-type, :max-count 2)
                                         ; optional function that combines the above sources into the output
-                           :function ::osc-function-type
-                           ))
+   :function ::osc-function-type
+   ))
 
 (s/def ::osc-params-type pos-int?) ; placeholder
 (s/def ::osc-source-type pos-int?) ; placeholder
@@ -128,12 +116,54 @@
 ;;                                          (sgen/such-that #(not= s1 "")
 ;;                                                          (sgen/string-alphanumeric)))))
 
-;; (s/def ::hello
-;;   (s/with-gen #(clojure.string/includes? % "hello")
-
-(s/valid? ::osc-function-type :openloop.osc_functions/name)  ;; true
-
 (def osc-function-gen (sgen/fmap #(symbol "openloop.osc_functions" %)
                                  (sgen/such-that #(not= % "")
                                                  (sgen/string-alphanumeric))))
-(gen/sample osc-function-gen 5)
+;; (gen/sample osc-function-gen 5)
+
+
+(s/def ::all-loops-type  ; a vector of all loops contributing to the output.
+  (s/coll-of ::loop-type :count nr-loops))
+
+(s/def ::looper-state-type ; the overall state of the program
+  (s/cat
+   :booted boolean? ; is scsynth booted
+   :connected boolean? ; is scsynth connected
+                                        ; we don't have a master loop, just the length (in samples) of what would be the master in a traditional looper
+   :master-length pos-int? ; sync loop length in samples
+   :master-offset int? ; if we redefine the start of the loop afterwards: how many samples before or after the old start.
+   :all-loops ::all-loops-type))
+
+(println "000000000000000000000000000000000")
+(pprint (drop 90 (s/exercise ::looper-state-type 91)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; spec functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(pprint (s/describe ::loop-type))
+;; (defn ranged-rand
+;;   "Returns random int in range start <= rand < end"
+;;   [start end]
+;;   (+ start (long (rand (- start end)))))
+
+;; (s/fdef ranged-rand
+;;         :args (s/and (s/cat :start int? :end int?)
+;;                      #(< (:start %) (:end %)))
+;;         :ret int?
+;;         :fn (s/and #(>= (:ret %) (-> % :args :start))
+;;                    #(< (:ret %) (-> % :args :end))))
+
+;; (long (rand))
+
+;; (ranged-rand 3 77)
+
+;; (stest/instrument `ranged-rand)
+;; (ranged-rand 8 5)
+
+;; (pprint (stest/check `ranged-rand))
+
+;; (pprint (stest/abbrev-result (first (stest/check `ranged-rand))))
+
+;; (stest/enumerate-namespace 'openloop.core)
