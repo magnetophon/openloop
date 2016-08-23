@@ -78,11 +78,19 @@
 ;; the keys represent the start index in the loop where the block should go.
 (s/def ::audio-sources-type
   (s/with-gen
-    (s/map-of ::loop-index-type ::audio-block-type :max-count max-sources-nr )
-    #(gen/fmap (fn [m]
-                 (into (sorted-map) m))
-               (gen/map (s/gen ::loop-index-type ) (s/gen ::audio-block-type ))))
-  )
+    (s/map-of ::loop-index-type ::audio-block-type :max-count max-sources-nr  :distinct true :into (sorted-map) :conform-keys true)
+    #(gen/fmap
+      (fn [m] (into (sorted-map) m))
+      (gen/map (s/gen ::loop-index-type ) (s/gen ::audio-block-type )))))
+
+(pprint (drop 90 (s/exercise ::audio-sources-type 91)))
+
+(s/conform ::audio-sources-type {23 `(1466063603 970),
+                                 478 `(1710818526811806646 621),
+                                 16155 `(1897534 812),
+                                 665747 `(2 831),
+                                 682446 `(23582 491),
+                                 882712 `(9039040615 622)})
 
 (s/def ::loop-index-type (s/int-in 0 max-loop-length))
 ;; (s/def ::loop-index-type (s/spec #(s/int-in-range? 0 max-loop-length %)))
