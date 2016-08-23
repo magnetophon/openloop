@@ -7,52 +7,141 @@
    [openloop.constants]))
 
 (defn inc-val [val & _] (inc val))
+(defn record-master
+  "start recording the master loop"
+  [loop-nr start-time]
+  (println (str "recording master loop to" loop-nr)))
+
 
 (fsm/defsm-inc loop-fsm
   [[:idle
-    :loop-btn -> :rec-master
+    :loop-btn-down -> {:action record-master} :rec-master
     :tap -> {:action inc-val} :start-counting]
    [:rec-master
-    :loop-btn ->  :play-master
+    :loop-btn-down ->  :play-master
     :timeout -> :idle]
    [:start-counting
     :tap -> {:action inc-val} :counting
-    :loop-btn -> :rec-master
+    :loop-btn-down -> :rec-master
     :timeout -> :idle
     ]
    [:counting
     :tap -> {:action inc-val} :counting
-    :loop-btn -> :rec-master
+    :loop-btn-down -> :rec-master
     :timeout -> :rec-master
     ]
    [:play-master
-    :loop-btn -> :rec-master
+    :loop-btn-down -> :rec-master
     ]])
 
 (fsm/show-fsm loop-fsm)
 
-(def fsm-state (atom (loop-fsm  0)))
-(:value @fsm-state)
+(def looper-state
+  [
+   {:length 0,
+    :sources
+    {:audio
+     {0 {:src-index 0, :x-fade-data {:length 10}}},
+     :osc
+     {:initial-values 0,
+      :sources-vector [0],
+      :function :openloop.osc_functions/sum}},
+    :FX {:internal 0, :external {:jack-name "", :command "", :port 1}}}])
+
+(def looper-state
+  {:booted false,
+   :connected false,
+   :master-length 0,
+   :master-offset 0,
+   :all-loops
+   [{:length 0,
+     :sources
+     {:audio
+      {
+       0 {:src-index 2, :x-fade-data {:length 1}}},
+      :osc
+      {:initial-values 0,
+       :sources-vector [],
+       :function :openloop.osc_functions/sum}},
+     :FX
+     {:internal 0, :external {:jack-name "", :command "", :port 0}}}]})
+
+(def looper-state
+  {  false
+   false
+   0
+   0
+   [{:length 0,
+     :sources
+     {:audio {0 {:src-index 2, :x-fade-data {:length 1}}},
+      :osc
+      {:initial-values 0,
+       :sources-vector [],
+       :function :openloop.osc_functions/sum}},
+     :FX {:internal 0, :external {:jack-name "", :command "", :port 0}}}]})
+
+(pprint (((s/unform ::looper-state-type looper-state))))
+(s/unform ::looper-state-type looper-state)
+(s/explain ::looper-state-type (s/unform ::looper-state-type looper-state))
+
+
+(println "ooooooooooooooooooooooooooooooooooooo")
+(pprint looper-state)
+
+(def fsm-state (atom (loop-fsm  looper-state)))
+(:length (first (:value @fsm-state)))
 (:state @fsm-state)
 
+(defn should-transition? [[state event]]
+  (= (* state 2) event))
+
+(defn event-is-even? [[state event]]
+  (even? event))
+
+(defn inc-count [count & _ ]
+  (println (str "cnt: " count))
+  (inc count)
+  )
+
+
+(defn reset-count [& _]
+  0)
+
+;; transition to the next state when we get a value thats twice the number of even events we've seen
+(fsm/defsm-inc even-example
+  [[:start
+    [_ :guard should-transition?] -> {:action reset-count} :next-state
+    [_ :guard event-is-even?] -> {:action inc-count} :start]
+   [:next-state ,,,]]
+  :default-acc  0
+  :dispatch :event-acc-vec)
+
+(def even-fsm-state (atom (even-example  0)))
+(swap! even-fsm-state fsm/fsm-event 2)
+(:value @even-fsm-state)
+(:event @even-fsm-state)
+(:state @even-fsm-state)
+(even-example [1 1 2])   ;; => 1 (the number of even events)
+(even-example [1 2 2 4]) ;; => 0 (we transitioned to next state)
+
+(fsm/show-fsm even-example)
 (defn fsm-step
   ""
   []
   )
 
 
-(swap! fsm-state fsm/fsm-event :loop-btn)
+(swap! fsm-state fsm/fsm-event :loop-btn-down)
 (swap! fsm-state fsm/fsm-event :tap)
 (swap! fsm-state fsm/fsm-event :timeout)
 (swap! fsm-state fsm/fsm-event :other-loop-btn)
 (loop-fsm 0)
 
-openloop.constants
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; define input state
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def inputs
-  {:loop-btns (boolean-array nr-loops nil)
+  {:loop-btn-downs (boolean-array nr-loops nil)
    :tap (boolean nil)
    :timeout (boolean nil)
    })
@@ -97,7 +186,6 @@ openloop.constants
    :transform nil ; what function did we use to get from the osc sources to the output
    })
 
-(pprint loop0)
 (def loop0 a-loop)
 (:loop-nr loop0)
 (:audio loop0)
