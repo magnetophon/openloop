@@ -67,12 +67,34 @@
 ;; define some functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defn initialized? [[state event]]
+  (println "event: " event)
+  (println  "booted pre"(:booted state))
+  (init)
+  (println  "booted"(:booted state))
+  (:booted state)
+  )
+
+(def fsm-state (atom (loop-fsm  looper-state)))
+(:FX (first (:all-loops (first (:undo-stack (:saved-state (:value @fsm-state)))))))
+
+(:value @fsm-state)
+(:state @fsm-state)
+
+(swap! fsm-state fsm/fsm-event :loop-btn-down)
+(swap! fsm-state fsm/fsm-event :loop-btn-up)
+(swap! fsm-state fsm/fsm-event :tap)
+(swap! fsm-state fsm/fsm-event :timeout)
+(swap! fsm-state fsm/fsm-event :other-loop-btn)
+
 (defn inc-val [val & _] (inc val))
 
 (defn record-master
   "start recording the master loop"
   [& args]
-  (println (str "recording master loop to" args)))
+  (println (str "recording master loop to" args))
+  args
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; define the state machine
@@ -80,36 +102,35 @@
 
 
 (fsm/defsm-inc loop-fsm
-  [[:idle
-    :loop-btn-down -> {:action record-master} :rec-master
-    :tap -> {:action inc-val} :start-counting]
+  [
+   [:initializing
+    [_ :guard initialized?] -> :idle  ]
+   [:idle
+    [:loop-btn-down] -> {:action record-master} :rec-master
+    [:tap] -> {:action inc-val} :start-counting]
    [:rec-master
-    :loop-btn-down ->  :play-master
-    :timeout -> :idle]
+    [:loop-btn-down] ->  :play-master
+    [:timeout] -> :idle]
    [:start-counting
-    :tap -> {:action inc-val} :counting
-    :loop-btn-down -> :rec-master
-    :timeout -> :idle
+    [:tap] -> {:action inc-val} :counting
+    [:loop-btn-down] -> :rec-master
+    [:timeout] -> :idle
     ]
    [:counting
-    :tap -> {:action inc-val} :counting
-    :loop-btn-down -> :rec-master
-    :timeout -> :rec-master
+    [:tap] -> {:action inc-val} :counting
+    [:loop-btn-down] -> :rec-master
+    [:timeout] -> :rec-master
     ]
    [:play-master
-    :loop-btn-down -> :rec-master
-    ]])
+    [:loop-btn-down] -> :rec-master
+    ]]
+  :dispatch :event-acc-vec
+  )
 
 (fsm/show-fsm loop-fsm)
 
 (println "ooooooooooooooooooooooooooooooooooooo")
 (pprint looper-state)
-
-(def fsm-state (atom (loop-fsm  looper-state)))
-(:FX (first (:all-loops (first (:undo-stack (:saved-state (:value @fsm-state)))))))
-
-(:value @fsm-state)
-(:state @fsm-state)
 
 (defn should-transition? [[state event]]
   (= (* state 2) event))
@@ -143,10 +164,6 @@
 (even-example [1 1 2])   ;; => 1 (the number of even events)
 (even-example [1 2 2 4]) ;; => 0 (we transitioned to next state)
 
-(swap! fsm-state fsm/fsm-event :loop-btn-down)
-(swap! fsm-state fsm/fsm-event :tap)
-(swap! fsm-state fsm/fsm-event :timeout)
-(swap! fsm-state fsm/fsm-event :other-loop-btn)
 (loop-fsm 0)
 
 (use 'overtone.osc)
