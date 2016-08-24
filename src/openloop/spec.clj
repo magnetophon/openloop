@@ -87,7 +87,6 @@
 (pprint (drop 90 (s/exercise ::audio-sources-type 91)))
 
 (s/def ::loop-index-type (s/int-in 0 max-loop-length))
-;; (s/def ::loop-index-type (s/spec #(s/int-in-range? 0 max-loop-length %)))
 (s/def ::loop-length-type (s/int-in 1 (inc  max-loop-length)))
 
 (s/def ::osc-sources-type
@@ -125,18 +124,33 @@
 
 
 (s/def ::all-loops-type  ; a vector of all loops contributing to the output.
-  (s/coll-of ::loop-type :count nr-loops))
+  (s/coll-of ::loop-type :max-count nr-loops))
+
+(s/def ::current-state-type ; the overall state of the program
+  (s/cat
+                                        ; we don't have a master loop, just the length (in samples) of what would be the master in a traditional looper
+   :master-length ::loop-index-type ; sync loop length in samples
+   :master-offset int? ; if we redefine the start of the loop afterwards: how many samples before or after the old start.
+   :all-loops ::all-loops-type)) ; the data of the individual loops.
+
+(s/def ::saved-state-type ; everything we need for undo/redo and saving projects
+  (s/cat
+   :undo-index (s/int-in 1 max-undo-nr) ; where in the undo-stack are we now?
+                                        ; the collection of previous states:
+   ;; :undo-stack (s/coll-of ::current-state-type, :min-count (the-current-val-of-:undo-index) :max-count max-undo-nr)))
+   ;; :undo-stack (s/coll-of ::current-state-type, :max-count max-undo-nr)))
+   :undo-stack (s/coll-of ::current-state-type, :max-count 2)))
 
 (s/def ::looper-state-type ; the overall state of the program
   (s/cat
    :booted boolean? ; is scsynth booted
    :connected boolean? ; is scsynth connected
-                                        ; we don't have a master loop, just the length (in samples) of what would be the master in a traditional looper
-   :master-length pos-int? ; sync loop length in samples
-   :master-offset int? ; if we redefine the start of the loop afterwards: how many samples before or after the old start.
-   :all-loops ::all-loops-type))
+   :saved-state ::saved-state-type ; everything we need for undo/redo and saving projects
+   ))
+
 
 (println "000000000000000000000000000000000")
+(pprint (drop 2 (s/exercise ::looper-state-type 3)))
 (pprint (drop 90 (s/exercise ::looper-state-type 91)))
 
 
@@ -144,7 +158,7 @@
 ;; spec functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(pprint (s/describe ::loop-type))
+(pprint (s/describe ::saved-state-type))
 ;; (defn ranged-rand
 ;;   "Returns random int in range start <= rand < end"
 ;;   [start end]
