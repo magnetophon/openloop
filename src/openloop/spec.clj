@@ -43,8 +43,9 @@
       (fn [m] (into (sorted-map) m))
       (gen/map (s/gen ::loop-index-type ) (s/gen ::audio-block-type )))))
 
-;; (println "ooooooooooooooooo")
-;; (pprint (drop 90 (s/exercise ::audio-sources-type 91)))
+(println "ooooooooooooooooo")
+(pprint (drop 90 (s/exercise ::audio-sources-type 91)))
+(pprint (s/exercise ::audio-sources-type 1))
 
 (s/def ::osc-params-type pos-int?) ; placeholder
 (s/def ::osc-source-type pos-int?) ; placeholder

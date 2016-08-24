@@ -12,3 +12,4 @@
 (def max-undo-nr 16)
 (def max-sources-nr 128)
 (def max-x-fade-length 1024 )
+(def default-x-fade-length 10)
