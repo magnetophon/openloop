@@ -37,18 +37,6 @@
 (fsm/show-fsm loop-fsm)
 
 (def looper-state
-  [
-   {:length 0,
-    :sources
-    {:audio
-     {0 {:src-index 0, :x-fade-data {:length 10}}},
-     :osc
-     {:initial-values 0,
-      :sources-vector [0],
-      :function :openloop.osc_functions/sum}},
-    :FX {:internal 0, :external {:jack-name "", :command "", :port 1}}}])
-
-(def looper-state
   {:booted false,
    :connected false,
    :master-length 0,
@@ -58,7 +46,7 @@
      :sources
      {:audio
       {
-       0 {:src-index 2, :x-fade-data {:length 1}}},
+       0 {:src-index 0, :x-fade-data {:length 0}}},
       :osc
       {:initial-values 0,
        :sources-vector [],
@@ -66,30 +54,17 @@
      :FX
      {:internal 0, :external {:jack-name "", :command "", :port 0}}}]})
 
-(def looper-state
-  {  false
-   false
-   0
-   0
-   [{:length 0,
-     :sources
-     {:audio {0 {:src-index 2, :x-fade-data {:length 1}}},
-      :osc
-      {:initial-values 0,
-       :sources-vector [],
-       :function :openloop.osc_functions/sum}},
-     :FX {:internal 0, :external {:jack-name "", :command "", :port 0}}}]})
-
-(pprint (((s/unform ::looper-state-type looper-state))))
-(s/unform ::looper-state-type looper-state)
-(s/explain ::looper-state-type (s/unform ::looper-state-type looper-state))
-
+(pprint (s/unform ::looper-state-type looper-state))
+(pprint looper-state)
+(pprint (s/explain-data ::looper-state-type (s/unform ::looper-state-type looper-state)))
+(s/conform ::looper-state-type '(true true 773533 -167259015 []))
 
 (println "ooooooooooooooooooooooooooooooooooooo")
 (pprint looper-state)
 
 (def fsm-state (atom (loop-fsm  looper-state)))
-(:length (first (:value @fsm-state)))
+(:FX (first (:all-loops (:value @fsm-state))))
+(:value @fsm-state)
 (:state @fsm-state)
 
 (defn should-transition? [[state event]]
@@ -141,10 +116,11 @@
 ;; define input state
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def inputs
-  {:loop-btn-downs (boolean-array nr-loops nil)
-   :tap (boolean nil)
-   :timeout (boolean nil)
+  {:loop-btn-downs (boolean-array nr-loops)
+   :tap false
+   :timeout false
    })
+(pprint inputs)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; define loop data
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
