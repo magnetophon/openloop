@@ -15,7 +15,7 @@
    :tap false
    :timeout false
    })
-(pprint inputs)
+;; (pprint inputs)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; define loop data
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -60,32 +60,38 @@
    })
 
 
-(println "rrrrrrrrrrrrrrrr")
-(pprint looper-state)
+;; (println "rrrrrrrrrrrrrrrr")
+;; (pprint looper-state)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; define some functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; (defn initialized? [state event]
 (defn initialized? [[state event]]
-  (println "event: " event)
-  (println  "booted pre"(:booted state))
-  (init)
-  (println  "booted"(:booted state))
+  ;; (println args)
+  ;; (println "event: " event)
+  ;; (println  "booted pre"(:booted state))
+  (boot)
+  ;; (swap! fsm-state assoc-in [:value :booted] true)
+  ;; (println  "booted"(:booted state))
   (:booted state)
+  ;; true
   )
+(println "ppppppppppppppppppppppppppppppp")
 
 (def fsm-state (atom (loop-fsm  looper-state)))
-(:FX (first (:all-loops (first (:undo-stack (:saved-state (:value @fsm-state)))))))
-
+;; (:FX (first (:all-loops (first (:undo-stack (:saved-state (:value @fsm-state)))))))
+(assoc-in @fsm-state [:value :booted] true)
 (:value @fsm-state)
 (:state @fsm-state)
 
+(kill-server)
 (swap! fsm-state fsm/fsm-event :loop-btn-down)
-(swap! fsm-state fsm/fsm-event :loop-btn-up)
+;; (swap! fsm-state fsm/fsm-event :loop-btn-up)
 (swap! fsm-state fsm/fsm-event :tap)
-(swap! fsm-state fsm/fsm-event :timeout)
-(swap! fsm-state fsm/fsm-event :other-loop-btn)
+;; (swap! fsm-state fsm/fsm-event :timeout)
+;; (swap! fsm-state fsm/fsm-event :other-loop-btn)
 
 (defn inc-val [val & _] (inc val))
 
@@ -104,33 +110,35 @@
 (fsm/defsm-inc loop-fsm
   [
    [:initializing
-    [_ :guard initialized?] -> :idle  ]
+    ;; [_ _ ] -> :idle  ]
+    [[_ _] :guard initialized?] -> :idle  ]
    [:idle
-    [:loop-btn-down] -> {:action record-master} :rec-master
-    [:tap] -> {:action inc-val} :start-counting]
+    [[_ :loop-btn-down]] -> {:action record-master} :rec-master
+    [[_ :tap]] -> {:action inc-val} :start-counting]
    [:rec-master
-    [:loop-btn-down] ->  :play-master
-    [:timeout] -> :idle]
+    [[_ :loop-btn-down]] ->  :play-master
+    [[_ :timeout]] -> :idle]
    [:start-counting
-    [:tap] -> {:action inc-val} :counting
-    [:loop-btn-down] -> :rec-master
-    [:timeout] -> :idle
+    [[_ :tap]] -> {:action inc-val} :counting
+    [[_ :loop-btn-down]] -> :rec-master
+    [[_ :timeout]] -> :idle
     ]
    [:counting
-    [:tap] -> {:action inc-val} :counting
-    [:loop-btn-down] -> :rec-master
-    [:timeout] -> :rec-master
+    [[_ :tap]] -> {:action inc-val} :counting
+    [[_ :loop-btn-down]] -> :rec-master
+    [[_ :timeout]] -> :rec-master
     ]
    [:play-master
-    [:loop-btn-down] -> :rec-master
+    [[_ :loop-btn-down]] -> :rec-master
     ]]
   :dispatch :event-acc-vec
+  ;; :dispatch :event-and-acc
   )
 
-(fsm/show-fsm loop-fsm)
+;; (fsm/show-fsm loop-fsm)
 
-(println "ooooooooooooooooooooooooooooooooooooo")
-(pprint looper-state)
+;; (println "ooooooooooooooooooooooooooooooooooooo")
+;; (pprint looper-state)
 
 (defn should-transition? [[state event]]
   (= (* state 2) event))
@@ -157,39 +165,39 @@
   :dispatch :event-acc-vec)
 
 (def even-fsm-state (atom (even-example  0)))
-(swap! even-fsm-state fsm/fsm-event 2)
-(:value @even-fsm-state)
-(:event @even-fsm-state)
-(:state @even-fsm-state)
-(even-example [1 1 2])   ;; => 1 (the number of even events)
-(even-example [1 2 2 4]) ;; => 0 (we transitioned to next state)
+;; (swap! even-fsm-state fsm/fsm-event 2)
+;; (:value @even-fsm-state)
+;; (:event @even-fsm-state)
+;; (:state @even-fsm-state)
+;; (even-example [1 1 2])   ;; => 1 (the number of even events)
+;; (even-example [1 2 2 4]) ;; => 0 (we transitioned to next state)
 
-(loop-fsm 0)
+;; (loop-fsm 0)
 
-(use 'overtone.osc)
-(def PORT 4242)
+;; (use 'overtone.osc)
+;; (def PORT 4242)
 
-                                        ; start a server and create a client to talk with it
-(def server (osc-server PORT))
-(def client (osc-client "localhost" PORT))
+;;                                         ; start a server and create a client to talk with it
+;; (def server (osc-server PORT))
+;; (def client (osc-client "localhost" PORT))
 
-                                        ; Register a handler function for the /test OSC address
-                                        ; The handler takes a message map with the following keys:
-                                        ;   [:src-host, :src-port, :path, :type-tag, :args]
-(osc-handle server "/test" (fn [msg] (println "MSG: " msg)))
+;;                                         ; Register a handler function for the /test OSC address
+;;                                         ; The handler takes a message map with the following keys:
+;;                                         ;   [:src-host, :src-port, :path, :type-tag, :args]
+;; (osc-handle server "/test" (fn [msg] (println "MSG: " msg)))
 
-                                        ; send it some messages
-(println "ooooooooooooooooooooooooooooooooooooooooooo")
-(doseq [val (range 10)]
-  ;; (osc-send client "/test" (mod val 2) val))
-;; (osc-send client "/test" (even? val)))
-(osc-send client "/test" "i" val "some more"))
+;;                                         ; send it some messages
+;; (println "ooooooooooooooooooooooooooooooooooooooooooo")
+;; (doseq [val (range 10)]
+;;   ;; (osc-send client "/test" (mod val 2) val))
+;; ;; (osc-send client "/test" (even? val)))
+;; (osc-send client "/test" "i" val "some more"))
 
-(Thread/sleep 1000)
+;; (Thread/sleep 1000)
 
-                                        ;remove handler
-(osc-rm-handler server "/test")
+;;                                         ;remove handler
+;; (osc-rm-handler server "/test")
 
-                                        ; stop listening and deallocate resources
-(osc-close client)
-(osc-close server)
+;;                                         ; stop listening and deallocate resources
+;; (osc-close client)
+;; (osc-close server)

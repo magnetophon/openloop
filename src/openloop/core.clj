@@ -17,6 +17,7 @@
   (println "start booting")
   (if (server-connected?)
     (do
+      (swap! fsm-state assoc-in [:value :booted] true)
       (println "we are connected:")
       (println (server-info))
       (wait-until-mixer-booted)
@@ -29,9 +30,11 @@
       (println "all files loaded, setting up")
       )
     (do
+      (swap! fsm-state assoc-in [:value :booted] false)
       (println "connecting to server")
       (connect-external-server)
-      (apply-at 1000 (boot)))))
+      (apply-at 1000 (boot))
+      )))
 
 (kill-server)
 (boot)
