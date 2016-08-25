@@ -1,8 +1,9 @@
 (ns openloop.core
   (:gen-class)
   (use [overtone.core])
-  (require [quil.core :as q])
-  )
+  (require [quil.core :as q]
+           [openloop.constants]
+           ))
 
 
 
@@ -22,12 +23,15 @@
       (println (server-info))
       (wait-until-mixer-booted)
       (println (status))
-      (load-file "src/openloop/constants.clj")
-      (load-file "src/openloop/states.clj")
+      ;; (load-file "src/openloop/constants.clj")
+      ;; (load-file "src/openloop/states.clj")
       ;; (load-file "src/openloop/ui.clj")
+      ;; these following files need these defs, but these defs need a booted synth
+      (def SR (:sample-rate (server-info)))
+      (def max-loop-samples (* max-loop-seconds SR))
       (load-file "src/openloop/synths.clj")
       (load-file "src/openloop/init.clj")
-      (println "all files loaded, setting up")
+      (println "all openloop files loaded, setting up")
       )
     (do
       (swap! fsm-state assoc-in [:value :booted] false)

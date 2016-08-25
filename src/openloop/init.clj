@@ -16,8 +16,8 @@
   "initialise"
   []
   (clear-all)
-  (def SR (:sample-rate (server-info)))
-  (def max-loop-samples (* max-loop-seconds SR))
+  ;; (def SR (:sample-rate (server-info)))
+  ;; (def max-loop-samples (* max-loop-seconds SR))
   (groups)
   (defonce buffer0 (buffer max-loop-samples nr-chan buffer0))
   (defonce buffer1 (buffer max-loop-samples nr-chan buffer1))

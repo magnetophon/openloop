@@ -7,6 +7,7 @@
 
 ;; max loop length is just a few samples while designing the data structures
 ;; (def max-loop-length 8)
+;; for now we fix the SR that spec uses, cause to get the real SR we need a booted server
 (def max-loop-length (* 44100 max-loop-seconds))
 ;; (s/exercise ::loop-audio-type 2)
 (def max-undo-nr 16)

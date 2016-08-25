@@ -69,27 +69,23 @@
 
 ;; (defn initialized? [state event]
 (defn initialized? [[state event]]
-  ;; (println args)
-  ;; (println "event: " event)
-  ;; (println  "booted pre"(:booted state))
+  ;; remove boot while developing:
   (boot)
   ;; (swap! fsm-state assoc-in [:value :booted] true)
-  ;; (println  "booted"(:booted state))
   (:booted state)
   ;; true
   )
 (println "ppppppppppppppppppppppppppppppp")
 
-(def fsm-state (atom (loop-fsm  looper-state)))
+;; (def fsm-state (atom (loop-fsm  looper-state)))
 ;; (:FX (first (:all-loops (first (:undo-stack (:saved-state (:value @fsm-state)))))))
-(assoc-in @fsm-state [:value :booted] true)
 (:value @fsm-state)
 (:state @fsm-state)
 
-(kill-server)
-(swap! fsm-state fsm/fsm-event :loop-btn-down)
+;; (kill-server)
+;; (swap! fsm-state fsm/fsm-event :loop-btn-down)
 ;; (swap! fsm-state fsm/fsm-event :loop-btn-up)
-(swap! fsm-state fsm/fsm-event :tap)
+;; (swap! fsm-state fsm/fsm-event :tap)
 ;; (swap! fsm-state fsm/fsm-event :timeout)
 ;; (swap! fsm-state fsm/fsm-event :other-loop-btn)
 
@@ -97,9 +93,9 @@
 
 (defn record-master
   "start recording the master loop"
-  [& args]
-  (println (str "recording master loop to" args))
-  args
+  [state event fsm & action]
+  (println (str "recording master loop to" fsm action))
+  (vector state event)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
