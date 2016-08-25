@@ -7,7 +7,6 @@
 (def __AUTO-BOOT__
   (when (server-disconnected?)
     (. (Runtime/getRuntime) exec "scsynth -u 57110")
-    (Thread/sleep 2)
     (connect-external-server)
     ;; (boot-server-and-mixer)
     ))
