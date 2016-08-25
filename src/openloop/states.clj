@@ -71,19 +71,20 @@
 (defn initialized? [[state event]]
   ;; remove boot while developing:
   (boot)
+  (init)
   ;; (swap! fsm-state assoc-in [:value :booted] true)
   (:booted state)
   ;; true
   )
 (println "ppppppppppppppppppppppppppppppp")
 
-;; (def fsm-state (atom (loop-fsm  looper-state)))
 ;; (:FX (first (:all-loops (first (:undo-stack (:saved-state (:value @fsm-state)))))))
 (:value @fsm-state)
 (:state @fsm-state)
-
-;; (kill-server)
-;; (swap! fsm-state fsm/fsm-event :loop-btn-down)
+(def fsm-state (atom (loop-fsm  looper-state)))
+(kill-server)
+(pprint (server-status))
+(swap! fsm-state fsm/fsm-event :loop-btn-down)
 ;; (swap! fsm-state fsm/fsm-event :loop-btn-up)
 ;; (swap! fsm-state fsm/fsm-event :tap)
 ;; (swap! fsm-state fsm/fsm-event :timeout)

@@ -47,7 +47,9 @@
   ;; hack around index-in-between xruns:
   ;; see above
   ;; (def m-play-synth (master-play [:head play-master-group]))
-  (pp-node-tree))
+  (pp-node-tree)
+  (swap! fsm-state assoc-in [:value :booted] true)
+  )
 
 (defn start-master
   "start recording the master"
