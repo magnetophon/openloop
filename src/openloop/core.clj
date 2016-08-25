@@ -1,50 +1,75 @@
 (ns openloop.core
   (:gen-class)
-  (use [overtone.core])
-  (require [quil.core :as q]
-           [openloop.constants]
-           ))
+  (use [overtone.core]
+       ;; [openloop.constants]
+       ;; [openloop.boot]
 
+       )
+  (load-file "src/openloop/constants.clj")
+  (load-file "src/openloop/boot.clj")
+  (load-file "src/openloop/constants.clj")
+  (load-file "src/openloop/states.clj")
+  ;; (require
+  ;;  ;; [quil.core :as q]
+  ;;  [openloop.constants]
+  ;;  [overtone.core]
+  ;;  [openloop.boot]
+  ;;  ;; [openloop.functions]
+  )
+)
 
+;; (defonce __AUTO-CONNECT__
+(def __AUTO-CONNECT__
+  (when (server-disconnected?)
+    (connect-external-server)
+    ;; (boot-server-and-mixer)
+    ))
 
+(declare init)
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (println "Hello, World!"))
+  (println "Hello, World!")
+  (boot)
+  (Thread/sleep 5000)
+  (init)
+  )
 
-(defn boot
-  "boot up the looper"
+(-main)
+;; (kill-server)
+
+;; (server-connected?)
+;; (pp-node-tree)
+;; (pprint nr-chan)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; define some functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn set-up-fsm
+  "set up everything needed for the finite state machine"
   []
-  (println "start booting")
-  (if (server-connected?)
-    (do
-      (println "we are connected:")
-      (println (server-info))
-      (wait-until-mixer-booted)
-      (println (status))
-      ;; (load-file "src/openloop/constants.clj")
-      ;; (load-file "src/openloop/states.clj")
-      ;; (load-file "src/openloop/ui.clj")
-      ;; these following files need these defs, but these defs need a booted synth
-      (def SR (:sample-rate (server-info)))
-      (def max-loop-samples (* max-loop-seconds SR))
-      (load-file "src/openloop/synths.clj")
-      (load-file "src/openloop/init.clj")
-      (println "all openloop files loaded, setting up")
-      )
-    (do
-      (swap! fsm-state assoc-in [:value :booted] false)
-      (println "connecting to server")
-      (connect-external-server)
-      ;; (apply-at 5000 (boot)
-      ))))
 
+  )
+
+;; (:FX (first (:all-loops (first (:undo-stack (:saved-state (:value @fsm-state)))))))
+(:value @fsm-state)
+(:state @fsm-state)
+(pprint (server-status))
+(swap! fsm-state fsm/fsm-event :loop-btn-down)
 (kill-server)
-(boot)
+(swap! fsm-state assoc-in [:value :booted] true)
+;; (swap! fsm-state fsm/fsm-event :loop-btn-up)
+;; (swap! fsm-state fsm/fsm-event :tap)
+;; (swap! fsm-state fsm/fsm-event :timeout)
+;; (swap! fsm-state fsm/fsm-event :other-loop-btn)
+
+
+
+
+
 ( quil.applet/with-applet openloop.core/loop
  (q/background 000)
  )
-(init)
 (server-info)
 ;; (load openloop.constants)
 ;; (connect-external-server)
@@ -57,7 +82,6 @@
 (ctl s-rec-synth1 :start 1)
 (stop-slave)
 
-(pp-node-tree)
 
 (show-graphviz-synth master-play)
 

@@ -1,8 +1,8 @@
 (ns openloop.core
-  (require [overtone.core]
-           [openloop.constants]
-           [openloop.synths]))
-
+  ;; (require
+  ;;  [openloop.synths]
+  ;;  )
+  )
 (defn groups
   "define groups"
   []
@@ -48,7 +48,6 @@
   ;; see above
   ;; (def m-play-synth (master-play [:head play-master-group]))
   (pp-node-tree)
-  (swap! fsm-state assoc-in [:value :booted] true)
   )
 
 (defn start-master

@@ -4,7 +4,7 @@
    [clojure.test.check.generators :as gen]
    [clojure.spec.gen :as sgen]
    [clojure.spec.test :as stest]
-   [openloop.constants]))
+   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; spec  input state

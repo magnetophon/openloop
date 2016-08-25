@@ -64,31 +64,17 @@
 ;; (pprint looper-state)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; define some functions
+;; define the state machine
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (defn initialized? [state event]
-(defn initialized? [[state event]]
-  ;; remove boot while developing:
-  (boot)
-  (init)
-  ;; (swap! fsm-state assoc-in [:value :booted] true)
-  (:booted state)
-  ;; true
-  )
-(println "ppppppppppppppppppppppppppppppp")
 
-;; (:FX (first (:all-loops (first (:undo-stack (:saved-state (:value @fsm-state)))))))
-(:value @fsm-state)
-(:state @fsm-state)
-(def fsm-state (atom (loop-fsm  looper-state)))
-(kill-server)
-(pprint (server-status))
-(swap! fsm-state fsm/fsm-event :loop-btn-down)
-;; (swap! fsm-state fsm/fsm-event :loop-btn-up)
-;; (swap! fsm-state fsm/fsm-event :tap)
-;; (swap! fsm-state fsm/fsm-event :timeout)
-;; (swap! fsm-state fsm/fsm-event :other-loop-btn)
+;; (defn initialized? [[state event]]
+;;   ;; remove boot while developing:
+;;   ;; (swap! fsm-state assoc-in [:value :booted] true)
+;;   ;; (boot)
+;;   (init)
+;;   (:booted state)
+;;   )
 
 (defn inc-val [val & _] (inc val))
 
@@ -99,16 +85,12 @@
   (vector state event)
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; define the state machine
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
 (fsm/defsm-inc loop-fsm
   [
-   [:initializing
-    ;; [_ _ ] -> :idle  ]
-    [[_ _] :guard initialized?] -> :idle  ]
+   ;; [
+   ;; :initializing
+   ;; ;; [_ _ ] -> :idle  ]
+   ;; [[_ _] :guard initialized?] -> :idle  ]
    [:idle
     [[_ :loop-btn-down]] -> {:action record-master} :rec-master
     [[_ :tap]] -> {:action inc-val} :start-counting]
@@ -136,6 +118,8 @@
 
 ;; (println "ooooooooooooooooooooooooooooooooooooo")
 ;; (pprint looper-state)
+
+(def fsm-state (atom (loop-fsm  looper-state)))
 
 (defn should-transition? [[state event]]
   (= (* state 2) event))
