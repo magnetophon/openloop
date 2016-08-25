@@ -4,7 +4,7 @@
    ;; [automat.core :as a]
    ;; [clojure.core.async :as as]
    [reduce-fsm :as fsm]
-   [openloop.constants]))
+   ))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

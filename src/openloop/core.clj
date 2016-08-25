@@ -1,15 +1,13 @@
 (ns openloop.core
   (:gen-class)
-  (use [overtone.core]
-       ;; [openloop.constants]
-       ;; [openloop.boot]
-
-       )
-  (load-file "src/openloop/constants.clj")
-  (load-file "src/openloop/boot.clj")
-  (load-file "src/openloop/constants.clj")
-  (load-file "src/openloop/states.clj")
-  ;; (require
+  (use [overtone.core])
+  ;; afaik I can't require or use these as they are the same ns
+  (load "constants")
+  (load "boot")
+  (load "states")
+  (require
+   [overtone.sc.machinery.server.connection :as con]
+   )
   ;;  ;; [quil.core :as q]
   ;;  [openloop.constants]
   ;;  [overtone.core]
@@ -18,14 +16,7 @@
   )
 )
 
-;; (defonce __AUTO-CONNECT__
-(def __AUTO-CONNECT__
-  (when (server-disconnected?)
-    (connect-external-server)
-    ;; (boot-server-and-mixer)
-    ))
 
-(declare init)
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
@@ -36,9 +27,10 @@
   )
 
 (-main)
-;; (kill-server)
 
-;; (server-connected?)
+;; (init)
+(kill-server)
+(server-connected?)
 ;; (pp-node-tree)
 ;; (pprint nr-chan)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

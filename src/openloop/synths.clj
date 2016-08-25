@@ -1,7 +1,8 @@
 (ns openloop.core
-  (require [overtone.core]
+  ;; (require [overtone.core]
            ;; [openloop.constants]
-           ))
+           ;; )
+  )
 
 (defsynth input
   "routs the input to the output and the recorders"
