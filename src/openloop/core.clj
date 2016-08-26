@@ -16,6 +16,160 @@
   )
 )
 
+(defsynth index-synth [c-bus 0 rate 1]
+  "the number of frames on disk"
+  (let [trigger (impulse:ar (/ SR 2))
+        slowtrigger (impulse:kr 1)
+
+        ;; count (stepper:ar trigger :min 0 :max 3.3554432E7 :step 2)
+        count (stepper:ar trigger :min 0 :max (* SR 60 60) :step 2)
+        ]
+    (send-trig:kr slowtrigger 0 (a2k count))
+    ))
+
+(show-graphviz-synth index-synth)
+(on-event "/tr" #(println "trigger: " (msg2int %)) ::index-synth)
+(on-event "/tr" #(println "samples: " (msg2int %) "   minutes: " (float (/ (msg2int %) (* SR 60)))) ::index-synth)
+(remove-event-handler ::index-synth)
+
+(defn msg2int
+  "takes a message and returns the value in integer"
+  [msg]
+  (int (- (last (:args msg)) 3 )))
+
+
+(index-synth)
+(kill index-synth)
+(clear-all)
+
+
+(defsynth metro-synth [c-bus 0 rate 1]
+  (let [trigger (impulse:kr rate)
+        count (stepper:kr trigger :min 1 :max 4)]
+    (send-trig:kr trigger count)
+    (out:kr c-bus trigger)))
+
+(on-event "/tr" #(println "trigger: " %) ::metro-synth)
+
+(metro-synth)
+
+(stepper)
+(tw-index)
+(pprint (buf-frames))
+(key-state)
+ (index-in-between)
+(lf-saw)
+
+;; score of timed OSC commands:
+;; http://doc.sccode.org/Classes/Score.html
+;; also analysis:
+;; http://doc.sccode.org/Guides/Non-Realtime-Synthesis.html
+;; // alternatively, provide a pathname to a local git repository:
+;; g = Git("/path/to/local/repo");
+
+;; record:
+(disk-rec)
+(disk-recording-start "/tmp/openloop.wav" :n-chans nr-chan :samples "float")
+
+(-main)
+
+(disk-recorder [:tail in-group] (apply buffer-stream "/tmp/openloop.wav"))
+
+(swap! fsm-state assoc-in [:value :recorder] nil)
+
+(pp-node-tree)
+(clear-all)
+
+(defn disk-rec
+  "record a file and start counting samples"
+  []
+  (disk-recording-start "/tmp/openloop.wav" :n-chans nr-chan :samples "float"))
+
+(defonce __DISKRECORDER__
+  (defsynth disk-recorder
+    [out-buf 0]
+    (disk-out out-buf (in 0 2))))
+
+(recording-start)
+(defn disk-recording-start
+  "Start recording a wav file to a new file at wav-path. Be careful -
+  may generate very large files. See buffer-stream for a list of output
+  options.
+  Note, due to the size of the buffer used for transferring the audio
+  from the audio server to the file, there will be 1.5s of silence at
+  the start of the recording"
+  [path & args]
+  (if-let [info (:recorder (:value @fsm-state ))]
+    (throw (Exception. (str "Recording already taking place to: "
+                            (get-in info [:buf-stream :path])))))
+
+  (let [
+        ;; path (resolve-tilde-path path)
+        bs   (apply buffer-stream path args)
+        rec  (disk-recorder [:tail in-group] bs)]
+    (swap! fsm-state assoc-in [:value :recorder] {:rec-id rec
+                                    :buf-stream bs})
+    :recording-started))
+
+
+(defn disk-recording-stop
+  "Stop system-wide recording. This frees the file and writes the wav headers.
+  Returns the path of the file created."
+  []
+  (when-let [info (:recorder (:value @fsm-state))]
+    (kill (:rec-id info))
+    (buffer-stream-close (:buf-stream info))
+    (swap! fsm-state assoc-in [:value :recorder] nil)
+    (get-in info [:buf-stream :path])))
+
+(disk-recording-stop)
+
+(recording?)
+
+(comment
+
+  recording?
+
+  (tap)
+  (sample-dur)
+  (control-dur)
+
+(def buffer-stream
+  "Returns a buffer-stream which is similar to a regular buffer but may
+  be used with the disk-out ugen to stream to a specific file on disk.
+  Use #'buffer-stream-close to close the stream to finish recording to
+  disk.
+  Options:
+  :n-chans     - Number of channels for the buffer
+                 Default 2
+  :size        - Buffer size
+                 Default 65536
+  :header      - Header format: \"aiff\", \"next\", \"wav\", \"ircam\", \"raw\"
+                 Default \"wav\"
+  :samples     - Sample format: \"int8\", \"int16\", \"int24\", \"int32\",
+                                \"float\", \"double\", \"mulaw\", \"alaw\"
+                 Default \"int16\"
+  Example usage:
+  (buffer-stream \"~/Desktop/foo.wav\" :n-chans 1 :header \"aiff\"
+                                       :samples \"int32\")")
+
+(defn recording?
+  []
+  (not (nil? (:recorder @studio*))))
+)
+
+(disk-out out-buf (in 0 2))))
+(buffer-save buf \"~/Desktop/foo.wav\" :header \"aiff\" :samples \"int32\" :n-frames 10
+             :start-frame 100)
+(buffer-stream)
+
+(show-graphviz-synth)
+
+;; play:
+(def foo1 (load-sample "~/gun1.wav" :start 9000 :size 4000))
+(stereo-partial-player foo1 :loop? true)
+;; (buffer-cue "~/gun2.wav" :start (* 3 44100) :size max-loop-length))
+(buffer-cue)
 
 (defn -main
   "I don't do a whole lot ... yet."
