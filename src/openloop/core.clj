@@ -28,7 +28,6 @@
     ))
 
 (show-graphviz-synth index-synth)
-(on-event "/tr" #(println "trigger: " (msg2int %)) ::index-synth)
 (on-event "/tr" #(println "samples: " (msg2int %) "   minutes: " (float (/ (msg2int %) (* SR 60)))) ::index-synth)
 (remove-event-handler ::index-synth)
 
@@ -43,22 +42,6 @@
 (clear-all)
 
 
-(defsynth metro-synth [c-bus 0 rate 1]
-  (let [trigger (impulse:kr rate)
-        count (stepper:kr trigger :min 1 :max 4)]
-    (send-trig:kr trigger count)
-    (out:kr c-bus trigger)))
-
-(on-event "/tr" #(println "trigger: " %) ::metro-synth)
-
-(metro-synth)
-
-(stepper)
-(tw-index)
-(pprint (buf-frames))
-(key-state)
- (index-in-between)
-(lf-saw)
 
 ;; score of timed OSC commands:
 ;; http://doc.sccode.org/Classes/Score.html
@@ -100,8 +83,8 @@
   the start of the recording"
   [path & args]
   (if-let [info (:recorder (:value @fsm-state ))]
-    (throw (Exception. (str "Recording already taking place to: "
-                            (get-in info [:buf-stream :path])))))
+    ((throw (Exception. (str "Recording already taking place to: "
+                             (get-in info [:buf-stream :path]))))))
 
   (let [
         ;; path (resolve-tilde-path path)
@@ -116,18 +99,25 @@
   "Stop system-wide recording. This frees the file and writes the wav headers.
   Returns the path of the file created."
   []
-  (when-let [info (:recorder (:value @fsm-state))]
-    (kill (:rec-id info))
-    (buffer-stream-close (:buf-stream info))
-    (swap! fsm-state assoc-in [:value :recorder] nil)
-    (get-in info [:buf-stream :path])))
+  (if-let [info (:recorder (:value @fsm-state))]
+    (do
+      (kill (:rec-id info))
+      (buffer-stream-close (:buf-stream info))
+      (swap! fsm-state assoc-in [:value :recorder] nil)
+      (get-in info [:buf-stream :path]))
+    (throw (Exception. (str " No recording already taking place."))))
+  )
 
+(kill pscope)
 (disk-recording-stop)
 
 (recording?)
 
 (comment
 
+  (key-state)
+  (index-in-between)
+  (lf-saw)
   recording?
 
   (tap)
