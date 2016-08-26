@@ -53,8 +53,9 @@
 (def looper-state
   {:booted false,
    :connected false,
-   :recorder {:rec-id nil
-              :buf-stream nil} ;the disk recorder
+   :recorder nil
+   ;; {:rec-id nil
+   ;;  :buf-stream nil} ;the disk recorder
    :saved-state
    {:undo-index 0
     :undo-stack [init-state]}

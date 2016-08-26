@@ -21,6 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (s/def ::loop-index-type (s/int-in 0 max-loop-length))
+
 (s/def ::loop-length-type (s/int-in 1 (inc  max-loop-length)))
 
 (s/def ::x-fade-data-type (s/cat
@@ -130,6 +131,11 @@
   (s/cat
    :booted boolean? ; is scsynth booted
    :connected boolean? ; is scsynth connected
+   :recorder (s/nilable (s/cat
+                         :rec-id int?
+                         :buf-stream int?))
+   ;; {:rec-id nil
+   ;;  :buf-stream nil} ;the disk recorder
    :saved-state ::saved-state-type ; everything we need for undo/redo and saving projects
    :inputs ::inputs-type
    ))
