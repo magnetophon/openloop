@@ -29,6 +29,7 @@
 (init)
 (pp-node-tree)
 (disk-recording-start rec-group "/tmp/openloop.wav" :n-chans nr-chan :samples "float")
+(def disk-play-synth (disk-play [:tail play-slave-group]))
 (ctl (:rec-id (:recorder (:value @fsm-state)))  :trig 1)
 (disk-recording-stop)
 (show-graphviz-synth disk-recorder)
@@ -40,6 +41,7 @@
 (kill disk-rec+count-synth)
 (swap! fsm-state assoc-in [:value :recorder] nil)
 (:rec-id (:recorder (:value @fsm-state)))
+(:buf-stream  (:recorder (:value @fsm-state)))
 (disk-recording?)
 
 (defsynth index-synth [c-bus 0 rate 1]
@@ -109,6 +111,7 @@
 ;; play:
 (def foo1 (load-sample "~/gun1.wav" :start 9000 :size 4000))
 (stereo-partial-player foo1 :loop? true)
+(kill-player)
 ;; (buffer-cue "~/gun2.wav" :start (* 3 44100) :size max-loop-length))
 (buffer-cue)
 

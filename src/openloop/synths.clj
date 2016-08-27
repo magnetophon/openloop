@@ -82,20 +82,24 @@
     (out:ar out-bus out-sig)))
 
 
-;; (defonce __DISKRECORDER__
-(defsynth disk-recorder
-  [out-buf 0, rec-clock-bus 1000, now-bus 1001, trig [0 :tr]]
-  (let [
-        rec-clock (phasor:ar :trig 1 :end max-phasor-val ) ; start counting immediately
-        kr-clock (a2k rec-clock)
-        now (a2k (latch:ar rec-clock trig))]
-    (send-trig:kr trig 0 kr-clock)
-    (out:kr now-bus (* now trig))
-    (out:ar rec-clock-bus rec-clock)
-    (disk-out out-buf (in 50 nr-chan))
+(defonce __DISKRECORDER__
+  (defsynth disk-recorder
+    "record a file and start counting frames, outputting them on trigger"
+    [out-buf 0, rec-clock-bus 1000, now-bus 1001, trig [0 :tr]]
+    (let [
+          ;; rec-clock (phasor:ar :trig 1 :end max-phasor-val ) ; start counting immediately
+          rec-clock (sweep:ar 1 SR)
+          kr-clock (a2k rec-clock)
+          now (a2k (latch:ar rec-clock trig))]
+      (send-trig:kr trig 0 kr-clock)
+      (out:kr now-bus (* now trig))
+      (out:ar rec-clock-bus rec-clock)
+      (disk-out out-buf (in 50 nr-chan))
+      )
     )
   )
-;;)
+
+(show-graphviz-synth disk-recorder)
 
 (defn disk-recording-start
   "Start recording a wav file to a new file at wav-path. Be careful -
@@ -119,36 +123,66 @@
     :recording-started))
 
 
-(show-graphviz-synth disk-recorder)
+;; (show-graphviz-synth disk-recorder)
+
+(defn disk-load
+  "load a loop from disk"
+  [start  length]
+  (def buf (load-sample "/tmp/openloop.wav" :start start :size length))
+  )
+
+;; (disk-load 100 1000)
+
+(defsynth disk-play
+  "play back a slave loop"
+  [ in-bus 50, out-bus 70, which-buf 0, rec-clock-bus 1000, now-bus [1001 :tr]]
+  (let [
+        now (in:kr now-bus 1)
+        is-recording (toggle-ff:kr now)
+        start (latch:kr now (and (> now 0) (= is-recording 0)) )
+        stop (latch:kr now (and (> now 0) (= is-recording 1)) )
+        length (- stop start)
+        rec-clock (in:ar rec-clock-bus)
+        loop-clock (* (= is-recording 0) (wrap:ar rec-clock 0 length))
+        my-in (in:ar in-bus nr-chan)
+        buf (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
+        ;; buf (disk-load start length)
+        sig (buf-rd:ar nr-chan which-buf loop-clock 0 1)
+        ]
+    (out:ar out-bus sig)
+    ))
+
+;; (show-graphviz-synth disk-play)
+
 ;; (show-graphviz-synth disk-rec+count)
 
-(defsynth disk-rec+count
-  "record a file and start counting frames, outputting them on trigger"
-  ;; [group rec-clock-bus now-bus trig ]
-  ;; [group 0, path "/tmp/openloop.wav", rec-clock-bus 1000, now-bus 1001, trig [0 :tr]]
-  [ rec-clock-bus 1000, now-bus 1001, trig [0 :tr]]
-  ;; [bus 0 trig 1]
-  (let
-      [
-       bs   (apply buffer-stream "tmp/openloop.wav" nr-chan "float")
-       ;; rec  (disk-recorder [:head group] bs)
-       rec  (disk-out bs (in 50 nr-chan) )
-       ;; rec  (disk-out bs (in 0 nr-chan) [:head group])
-       rec-clock (phasor:ar :trig 1 :end max-phasor-val ) ; start counting immediately
-       kr-clock (a2k rec-clock)
-       now (a2k (latch:ar rec-clock trig))
-       ]
-    ;; (defsynth rec []  (disk-out bs (in 0 nr-chan)))
-    ;; (rec)
-    (send-trig:kr trig 0 kr-clock)
-    (out:kr now-bus (* now trig))
-    ;; (out:kr now-bus now)
-    (out:ar rec-clock-bus rec-clock)
-    ;; bs
-    ;; rec
-    ;; (swap! fsm-state assoc-in [:value :recorder] {:rec-id rec :buf-stream bs})
-    ;; (disk-recording-start group "/tmp/openloop.wav" :n-chans nr-chan :samples "float")
-    ))
+;; (defsynth disk-rec+count
+;;   "record a file and start counting frames, outputting them on trigger"
+;;   ;; [group rec-clock-bus now-bus trig ]
+;;   ;; [group 0, path "/tmp/openloop.wav", rec-clock-bus 1000, now-bus 1001, trig [0 :tr]]
+;;   [ rec-clock-bus 1000, now-bus 1001, trig [0 :tr]]
+;;   ;; [bus 0 trig 1]
+;;   (let
+;;       [
+;;        bs   (apply buffer-stream "tmp/openloop.wav" nr-chan "float")
+;;        ;; rec  (disk-recorder [:head group] bs)
+;;        rec  (disk-out bs (in 50 nr-chan) )
+;;        ;; rec  (disk-out bs (in 0 nr-chan) [:head group])
+;;        rec-clock (phasor:ar :trig 1 :end max-phasor-val ) ; start counting immediately
+;;        kr-clock (a2k rec-clock)
+;;        now (a2k (latch:ar rec-clock trig))
+;;        ]
+;;     ;; (defsynth rec []  (disk-out bs (in 0 nr-chan)))
+;;     ;; (rec)
+;;     (send-trig:kr trig 0 kr-clock)
+;;     (out:kr now-bus (* now trig))
+;;     ;; (out:kr now-bus now)
+;;     (out:ar rec-clock-bus rec-clock)
+;;     ;; bs
+;;     ;; rec
+;;     ;; (swap! fsm-state assoc-in [:value :recorder] {:rec-id rec :buf-stream bs})
+;;     ;; (disk-recording-start group "/tmp/openloop.wav" :n-chans nr-chan :samples "float")
+;;     ))
 
 (defn disk-recording-stop
   "Stop system-wide recording. This frees the file and writes the wav headers.
