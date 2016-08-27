@@ -14,3 +14,7 @@
 (def max-sources-nr 128)
 (def max-x-fade-length 1024 )
 (def default-x-fade-length 10)
+;; the maximum value of the recording phasor
+;; a phasor cannot get a higher value than this:  2^31
+;; it translates to more than 13 hours, so should be fine.
+(def max-phasor-val 2147483648)
