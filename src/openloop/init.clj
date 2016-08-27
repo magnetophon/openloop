@@ -41,8 +41,8 @@
 
   (def in-synth (input [:head in-group]))
   (def out-synth (output [:head out-group]))
-  ;; (def m-rec-synth (master-rec [:head rec-group]))
-  ;; (def s-rec-synth1 (slave-rec [:tail rec-group] :which-buf 1 ))
+  (def m-rec-synth (master-rec [:head rec-group]))
+  (def s-rec-synth1 (slave-rec [:tail rec-group] :which-buf 1 ))
   ;; can't do this unless you use
   ;; hack around index-in-between xruns:
   ;; see above

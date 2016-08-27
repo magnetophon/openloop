@@ -82,10 +82,20 @@
     (out:ar out-bus out-sig)))
 
 
-(defonce __DISKRECORDER__
-  (defsynth disk-recorder
-    [out-buf 0]
-    (disk-out out-buf (in 50 nr-chan))))
+;; (defonce __DISKRECORDER__
+(defsynth disk-recorder
+  [out-buf 0, rec-clock-bus 1000, now-bus 1001, trig [0 :tr]]
+  (let [
+        rec-clock (phasor:ar :trig 1 :end max-phasor-val ) ; start counting immediately
+        kr-clock (a2k rec-clock)
+        now (a2k (latch:ar rec-clock trig))]
+    (send-trig:kr trig 0 kr-clock)
+    (out:kr now-bus (* now trig))
+    (out:ar rec-clock-bus rec-clock)
+    (disk-out out-buf (in 50 nr-chan))
+    )
+  )
+;;)
 
 (defn disk-recording-start
   "Start recording a wav file to a new file at wav-path. Be careful -
@@ -109,7 +119,7 @@
     :recording-started))
 
 
-;; (show-graphviz-synth disk-recorder)
+(show-graphviz-synth disk-recorder)
 ;; (show-graphviz-synth disk-rec+count)
 
 (defsynth disk-rec+count
