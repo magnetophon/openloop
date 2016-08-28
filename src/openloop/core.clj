@@ -14,7 +14,7 @@
   ;;  [openloop.boot]
   ;;  ;; [openloop.functions]
   )
-)
+
 
 
 (defn -main
@@ -113,7 +113,7 @@
   (sample-dur)
   (control-dur)
 
-  (disk-out out-buf (in 0 2))))
+  (disk-out out-buf (in 0 2)))
 (buffer-save buf \"~/Desktop/foo.wav\" :header \"aiff\" :samples \"int32\" :n-frames 10
              :start-frame 100)
 (buffer-stream)
