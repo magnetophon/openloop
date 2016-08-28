@@ -16,10 +16,12 @@
   "initialise"
   []
 
-  (if disk-recording?
-    (do (println "stopping recording")
-        (recording-stop)
-        ))
+  (when (disk-recording?)
+    (println "stopping recording")
+    (println "pre" (get-in @fsm-state [:value :recorder :buf-stream :path] ))
+    (disk-recording-stop)
+    (println "post" (get-in @fsm-state [:value :recorder :buf-stream :path] ))
+    )
   (clear-all)
   ;; (def SR (:sample-rate (server-info)))
   ;; (def max-loop-samples (* max-loop-seconds SR))
