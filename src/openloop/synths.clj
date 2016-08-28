@@ -138,7 +138,7 @@
 ;; (disk-load 100 1000)
 (defsynth master-clock
   "if we have no loops running, define the new master length"
-  [rec-clock-bus 42, masterclock-bus 44, now-bus 1001]
+  [length-bus 80 , masterclock-bus 44, now-bus 1001]
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
@@ -152,11 +152,11 @@
         ;; tappers (tap :start 5 start)
         ;; tappert (tap :stop 5 stop)
         ;; tapperl (tap :length 5 length)
-        rec-clock (in:ar rec-clock-bus 1)
+        ;; rec-clock (in:ar rec-clock-bus 1)
         ;; first-start (latch first-recording now)
-        master-clock  (wrap:ar (- rec-clock start) 0 length)
+        ;; master-clock  (wrap:ar (- rec-clock start) 0 length)
         ]
-    (out:ar masterclock-bus master-clock)
+    (out:kr length-bus length )
     )
   )
 
@@ -181,7 +181,7 @@
 
 (defsynth loop-play
   "play back a slave loop"
-  [ in-bus 50, out-bus 70, which-buf 7, masterclock-bus 44, now-bus 1001]
+  [ in-bus 50, out-bus 70, which-buf 7, rec-clock-bus 42, now-bus 1001]
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
@@ -192,11 +192,11 @@
         start (latch:kr now start? )
         stop (latch:kr now stop? )
         length (max (- stop start) 0 )
-        ;; length (tap :my-tap 5 length)
+        ;; tapperl (tap :length 5 (a2k length ) )
         ;; master-clock (phasor:ar :trig stop? :rate 1 :end max-phasor-val )
-        master-clock (in:ar masterclock-bus 1)
-        tapperl (tap :length 5 (a2k length ) )
-        loop-clock (* (= is-recording 0) (wrap:ar master-clock 0 length))
+        rec-clock (in:ar rec-clock-bus 1)
+        loop-clock (* (= is-recording 0) (wrap:ar (- rec-clock start) 0 length))
+        ;; loop-clock (* (= is-recording 0) (wrap:ar master-clock 0 length))
         tapper (tap :clock 5 (a2k loop-clock) )
         ;; loop-clock (* (= is-recording 0) (wrap:ar (- master-clock start) 0 length))
         ;; my-in (in:ar in-bus nr-chan)
