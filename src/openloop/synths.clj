@@ -1,7 +1,7 @@
 (ns openloop.core
   ;; (require [overtone.core]
-           ;; [openloop.constants]
-           ;; )
+  ;; [openloop.constants]
+  ;; )
   )
 
 (defsynth input
@@ -82,22 +82,23 @@
     (out:ar out-bus out-sig)))
 
 
-(defonce __DISKRECORDER__
-  (defsynth disk-recorder
-    "record a file and start counting frames, outputting them on trigger"
-    [out-buf 0, rec-clock-bus 1000, now-bus 1001, trig [0 :tr]]
-    (let [
-          ;; rec-clock (phasor:ar :trig 1 :end max-phasor-val ) ; start counting immediately
-          rec-clock (sweep:ar 1 SR)
-          kr-clock (a2k rec-clock)
-          now (a2k (latch:ar rec-clock trig))]
-      (send-trig:kr trig 0 kr-clock)
-      (out:kr now-bus (* now trig))
-      (out:ar rec-clock-bus rec-clock)
-      (disk-out out-buf (in 50 nr-chan))
-      )
+;; (defonce __DISKRECORDER__
+(defsynth disk-recorder
+  "record a file and start counting frames, outputting them on trigger"
+  [out-buf 0, rec-clock-bus 1000, now-bus 1001, trig [0 :tr]]
+  (let [
+        rec-clock (phasor:ar :trig 1 :end max-phasor-val ) ; start counting immediately
+        ;; rec-clock (sweep:ar 1 SR)
+        kr-clock (a2k rec-clock)
+        ;; kr-clock (tap :my-tap 5 kr-clock)
+        now (a2k (latch:ar rec-clock trig))]
+    (send-trig:kr trig 0 kr-clock)
+    (out:kr now-bus (* now trig))
+    (out:ar rec-clock-bus rec-clock)
+    (disk-out out-buf (in 50 nr-chan))
     )
   )
+;; )
 
 (show-graphviz-synth disk-recorder)
 
@@ -133,26 +134,72 @@
 
 ;; (disk-load 100 1000)
 
-(defsynth disk-play
-  "play back a slave loop"
-  [ in-bus 50, out-bus 70, which-buf 0, rec-clock-bus 1000, now-bus [1001 :tr]]
+
+(defsynth ram-rec
+  "record a loop to ram"
+  [ in-bus 50, out-bus 70, which-buf 7, rec-clock-bus 1000, now-bus 1001]
   (let [
         now (in:kr now-bus 1)
-        is-recording (toggle-ff:kr now)
-        start (latch:kr now (and (> now 0) (= is-recording 0)) )
-        stop (latch:kr now (and (> now 0) (= is-recording 1)) )
-        length (- stop start)
-        rec-clock (in:ar rec-clock-bus)
-        loop-clock (* (= is-recording 0) (wrap:ar rec-clock 0 length))
+        new-now? (not= 0 now)
+        is-recording (toggle-ff:kr new-now?)
+        ;; is-recording        (tap :my-tap 5 is-recording)
         my-in (in:ar in-bus nr-chan)
-        buf (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
+        ;; tapsky        (tap :my-tap 5 (a2k my-in))
+        ]
+    (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
+    ))
+
+(defsynth loop-play
+  "play back a slave loop"
+  [ in-bus 50, out-bus 70, which-buf 7, rec-clock-bus 1000, now-bus 1001]
+  (let [
+        now (in:kr now-bus 1)
+        new-now? (not= 0 now)
+        is-recording (toggle-ff:kr new-now?)
+        ;; is-recording        (tap :my-tap 5 is-recording)
+        start (latch:kr now (and new-now? (= is-recording 1)) )
+        stop (latch:kr now (and new-now? (= is-recording 0)) )
+        length (clip (- stop start) 0 max-loop-length)
+        ;; length (tap :my-tap 5 length)
+        rec-clock (phasor:ar :trig 1 :rate 1 :end max-phasor-val )
+        ;; rec-clock (in:ar rec-clock-bus 1)
+        loop-clock (* (= is-recording 0) (wrap:ar rec-clock 0 length))
+        tappera        (tap :my-tap 5 (a2k loop-clock))
+        ;; my-in (in:ar in-bus nr-chan)
+        ;; buf (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
         ;; buf (disk-load start length)
         sig (buf-rd:ar nr-chan which-buf loop-clock 0 1)
         ]
+    ;; (send-trig:kr now-bus 0 now-bus)
+    (out:ar out-bus sig)
+    (out:kr 666 tappera)
+    ))
+
+(show-graphviz-synth loop-play)
+
+(defsynth disk-play
+  "play back a slave loop"
+  [ in-bus 50, out-bus 70, which-buf 7, rec-clock-bus 1000, now-bus 1001]
+  (let [
+        now (in:kr now-bus 1)
+        new-now? (not= 0 now)
+        is-recording (toggle-ff:kr new-now?)
+        start (latch:kr now (and new-now? (= is-recording 1)) )
+        ;; start        (tap :my-tap 5 start)
+        stop (latch:kr now (and new-now? (= is-recording 0)) )
+        length (- stop start)
+        rec-clock (in:ar rec-clock-bus)
+        loop-clock (* (= is-recording 0) (wrap:ar rec-clock 0 length))
+        ;; my-in (in:ar in-bus nr-chan)
+        ;; buf (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
+        ;; buf (disk-load start length)
+        sig (buf-rd:ar nr-chan which-buf loop-clock 0 1)
+        ]
+    ;; (send-trig:kr now-bus 0 now-bus)
     (out:ar out-bus sig)
     ))
 
-;; (show-graphviz-synth disk-play)
+(show-graphviz-synth disk-play)
 
 ;; (show-graphviz-synth disk-rec+count)
 
@@ -190,7 +237,8 @@
   []
   (if-let [info (:recorder (:value @fsm-state))]
     (do
-      (kill disk-rec+count)
+      ;; (kill disk-rec+count)
+      (kill (:rec-id info))
       (buffer-stream-close (:buf-stream info))
       (swap! fsm-state assoc-in [:value :recorder] nil)
       (get-in info [:buf-stream :path]))

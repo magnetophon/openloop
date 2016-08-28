@@ -25,21 +25,34 @@
   )
 
 (-main)
-(clear-all)
 (init)
 (pp-node-tree)
 (disk-recording-start rec-group "/tmp/openloop.wav" :n-chans nr-chan :samples "float")
-(def disk-play-synth (disk-play [:tail play-slave-group]))
+(def ram-rec-synth (ram-rec [:tail rec-group]))
+(def loop-play-synth (loop-play [:tail rec-group]))
+;; (def loop-play-synth (loop-play [:tail play-slave-group]))
 (ctl (:rec-id (:recorder (:value @fsm-state)))  :trig 1)
-(disk-recording-stop)
+@(get-in ram-rec-synth [:taps :my-tap])
+@(get-in loop-play-synth [:taps :my-tap])
+(swap! fsm-state assoc-in [:value :recorder] nil)
 (show-graphviz-synth disk-recorder)
+
+
+(defsynth foo []
+  (let [amp (lin-lin (sin-osc:kr 0.5) -1 1 0 1)
+        amp (tap :foo-amp 5 amp)
+        snd (sin-osc 440)]
+    (out 0 (* amp snd))))
+(def f (foo))
+(kill foo)
+
+
 (show-graphviz-synth disk-rec+count)
 ;; (ctl disk-rec+count-synth  :trig 1)
 ;; (def disk-rec+count-synth (disk-rec+count ))
 (def disk-rec+count-synth (disk-rec+count [:head rec-group]))
 ;; (def disk-rec+count-synth (disk-rec+count rec-group 1000 1001 trigger ))
 (kill disk-rec+count-synth)
-(swap! fsm-state assoc-in [:value :recorder] nil)
 (:rec-id (:recorder (:value @fsm-state)))
 (:buf-stream  (:recorder (:value @fsm-state)))
 (disk-recording?)
