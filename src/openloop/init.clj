@@ -18,9 +18,8 @@
 
   (when (disk-recording?)
     (println "stopping recording")
-    (println "pre" (get-in @fsm-state [:value :recorder :buf-stream :path] ))
+    (println "session saved in: " (get-in @fsm-state [:value :recorder :buf-stream :path] ))
     (disk-recording-stop)
-    (println "post" (get-in @fsm-state [:value :recorder :buf-stream :path] ))
     )
   (clear-all)
   ;; (def SR (:sample-rate (server-info)))
