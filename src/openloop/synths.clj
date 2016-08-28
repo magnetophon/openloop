@@ -72,6 +72,7 @@
 
 ;; (def test (+ (* 0.5 (decay downbeat 0.1) (sin-osc 880)) sig))
 
+
 (defsynth output
   "mix everything and send it out"
   [rec-bus 70 dir-bus 60 dir-amp 1 main-amp 1 out-bus 0]
@@ -90,7 +91,7 @@
         rec-clock (phasor:ar :trig 1 :end max-phasor-val ) ; start counting immediately
         ;; rec-clock (sweep:ar 1 SR)
         kr-clock (a2k rec-clock)
-        kr-clock (tap :my-tap 5 kr-clock)
+        ;; kr-clock (tap :my-tap 5 kr-clock)
         now (a2k (latch:ar rec-clock trig))
         audio-in (in in-bus nr-chan)]
     (send-trig:kr trig 0 kr-clock)
@@ -138,7 +139,7 @@
 ;; (disk-load 100 1000)
 (defsynth master-clock
   "if we have no loops running, define the new master length"
-  [length-bus 80 , masterclock-bus 44, now-bus 1001]
+  [length-bus 80, rec-clock-bus 42  master-clock-bus 44, now-bus 1001]
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
@@ -151,21 +152,22 @@
         length (max (- stop start) 0 )
         ;; tappers (tap :start 5 start)
         ;; tappert (tap :stop 5 stop)
-        ;; tapperl (tap :length 5 length)
-        ;; rec-clock (in:ar rec-clock-bus 1)
+        tapperl (tap :length 5 length)
+        rec-clock (in:ar rec-clock-bus 1)
         ;; first-start (latch first-recording now)
-        ;; master-clock  (wrap:ar (- rec-clock start) 0 length)
+        master-clock  (wrap:ar (- rec-clock start) 0 length)
         ]
     (out:kr length-bus length )
+    (out:ar master-clock-bus master-clock )
     )
   )
 
 (show-graphviz-synth master-clock)
 
 
-(defsynth ram-rec
+(defsynth ram-master-rec
   "record a loop to ram"
-  [ in-bus 50, out-bus 70, which-buf 7, masterclock-bus 44, now-bus 1001]
+  [ in-bus 50, out-bus 70, which-buf 0, master-clock-bus 44, now-bus 1001]
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
@@ -177,11 +179,38 @@
     ;; (out:ar rec-clock-bus rec-clock)
     ))
 
-(show-graphviz-synth ram-rec)
+(defsynth ram-slave-rec
+  "record a loop to ram"
+  [ rec-clock-bus 42,  in-bus 50, out-bus 70, length-bus 80, which-buf 7, master-clock-bus 44, now-bus 1001 reset-bus 1002]
+  (let [
+        now (in:kr now-bus 1)
+        new-now? (not= 0 now)
+        length (in:kr length-bus 1)
+        reset (in:kr reset-bus 1)
+        rec-clock (in:ar rec-clock-bus 1) ; the disk-clock
+        master-clock (in:ar master-clock-bus) ; the master-loop clock
+        have-master (not= 0 length) ; is there a master loop?
+        ;; is recording would be kind of a misnomer, cause we a are always recording. this means that the user has told us that he wants to record
+        wants-recording (toggle-ff:kr  new-now?)
+        is-recording (set-reset-ff (and wants-recording have-master) reset)
+        first-half? (<= master-clock (/ length 2)) ; are we in the first half?
+        master-start (latch:ar rec-clock (= 0 master-clock)) ; get a new start val every time the master passes 0
+        start (select:ar first-half? [master-start (+ master-start length )]) ; the starting point of the loop
+        extend-clock (min max-loop-length (- rec-clock start))
+        slave-clock (select:ar is-recording [master-clock extend-clock])
+        ;; is-recording        (tap :my-tap 5 is-recording)
+        my-in (in:ar in-bus nr-chan)
+        ]
+    (buf-wr:ar my-in which-buf slave-clock 0 )
+    ;; (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
+    ;; (out:ar rec-clock-bus rec-clock)
+    ))
 
-(defsynth loop-play
-  "play back a slave loop"
-  [ in-bus 50, out-bus 70, which-buf 7, rec-clock-bus 42, now-bus 1001]
+(show-graphviz-synth ram-slave-rec)
+
+(defsynth loop-master-play
+  "play back a master loop"
+  [ in-bus 50, out-bus 70, which-buf 0, rec-clock-bus 42, now-bus 1001]
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
@@ -197,7 +226,7 @@
         rec-clock (in:ar rec-clock-bus 1)
         loop-clock (* (= is-recording 0) (wrap:ar (- rec-clock start) 0 length))
         ;; loop-clock (* (= is-recording 0) (wrap:ar master-clock 0 length))
-        tapper (tap :clock 5 (a2k loop-clock) )
+        ;; tapper (tap :clock 5 (a2k loop-clock) )
         ;; loop-clock (* (= is-recording 0) (wrap:ar (- master-clock start) 0 length))
         ;; my-in (in:ar in-bus nr-chan)
         ;; buf (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
@@ -208,11 +237,42 @@
     (out:ar out-bus sig)
     ))
 
-(show-graphviz-synth loop-play)
+;; (show-graphviz-synth loop-master-play)
+
+(defsynth loop-slave-play
+  "play back a slave loop"
+  [ in-bus 50, out-bus 70, which-buf 0, rec-clock-bus 42, now-bus 1001]
+  (let [
+        now (in:kr now-bus 1)
+        new-now? (not= 0 now)
+        is-recording (toggle-ff:kr new-now?)
+        ;; is-recording        (tap :my-tap 5 is-recording)
+        stop? (and new-now? (= is-recording 0))
+        start? (and new-now? (= is-recording 1))
+        start (latch:kr now start? )
+        stop (latch:kr now stop? )
+        length (max (- stop start) 0 )
+        ;; tapperl (tap :length 5 (a2k length ) )
+        ;; master-clock (phasor:ar :trig stop? :rate 1 :end max-phasor-val )
+        rec-clock (in:ar rec-clock-bus 1)
+        loop-clock (* (= is-recording 0) (wrap:ar (- rec-clock start) 0 length))
+        ;; loop-clock (* (= is-recording 0) (wrap:ar master-clock 0 length))
+        ;; tapper (tap :clock 5 (a2k loop-clock) )
+        ;; loop-clock (* (= is-recording 0) (wrap:ar (- master-clock start) 0 length))
+        ;; my-in (in:ar in-bus nr-chan)
+        ;; buf (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
+        ;; buf (disk-load start length)
+        sig (buf-rd:ar nr-chan which-buf loop-clock 0 1)
+        ]
+    ;; (send-trig:kr now-bus 0 now-bus)
+    (out:ar out-bus sig)
+    ))
+
+(show-graphviz-synth loop-master-play)
 
 (defsynth disk-play
   "play back a slave loop"
-  [ in-bus 50, out-bus 70, which-buf 7, masterclock-bus 44, now-bus 1001]
+  [ in-bus 50, out-bus 70, which-buf 7, master-clock-bus 44, now-bus 1001]
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
@@ -221,7 +281,7 @@
         ;; start        (tap :my-tap 5 start)
         stop (latch:kr now (and new-now? (= is-recording 0)) )
         length (- stop start)
-        master-clock (in:ar masterclock-bus)
+        master-clock (in:ar master-clock-bus)
         loop-clock (* (= is-recording 0) (wrap:ar master-clock 0 length))
         ;; my-in (in:ar in-bus nr-chan)
         ;; buf (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
