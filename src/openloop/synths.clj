@@ -136,19 +136,42 @@
   )
 
 ;; (disk-load 100 1000)
-
-
-(defsynth ram-rec
-  "record a loop to ram"
-  [ in-bus 50, out-bus 70, which-buf 7, rec-clock-bus 42, now-bus 1001]
+(defsynth master-clock
+  "if we have no loops running, define the new master length"
+  [rec-clock-bus 42, masterclock-bus 44, now-bus 1001]
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
         is-recording (toggle-ff:kr new-now?)
-        ;; rec-clock (phasor:ar :trig 1 :end max-phasor-val ) ; start counting immediately
+        first-recording (set-reset-ff:kr new-now?)
+        stop? (set-reset-ff:kr (and new-now? (= is-recording 0)))
+        ;; start? (and new-now? (= first-recording 1))
+        start (latch:kr now first-recording )
+        stop (latch:kr now stop? )
+        length (max (- stop start) 0 )
+        ;; tappers (tap :start 5 start)
+        ;; tappert (tap :stop 5 stop)
+        ;; tapperl (tap :length 5 length)
+        rec-clock (in:ar rec-clock-bus 1)
+        ;; first-start (latch first-recording now)
+        master-clock  (wrap:ar (- rec-clock start) 0 length)
+        ]
+    (out:ar masterclock-bus master-clock)
+    )
+  )
+
+(show-graphviz-synth master-clock)
+
+
+(defsynth ram-rec
+  "record a loop to ram"
+  [ in-bus 50, out-bus 70, which-buf 7, masterclock-bus 44, now-bus 1001]
+  (let [
+        now (in:kr now-bus 1)
+        new-now? (not= 0 now)
+        is-recording (toggle-ff:kr new-now?)
         ;; is-recording        (tap :my-tap 5 is-recording)
         my-in (in:ar in-bus nr-chan)
-        tapsky        (tap :my-tap 5 (a2k (in:ar 40 1)))
         ]
     (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
     ;; (out:ar rec-clock-bus rec-clock)
@@ -158,7 +181,7 @@
 
 (defsynth loop-play
   "play back a slave loop"
-  [ in-bus 50, out-bus 70, which-buf 7, rec-clock-bus 42, now-bus 1001]
+  [ in-bus 50, out-bus 70, which-buf 7, masterclock-bus 44, now-bus 1001]
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
@@ -170,10 +193,12 @@
         stop (latch:kr now stop? )
         length (max (- stop start) 0 )
         ;; length (tap :my-tap 5 length)
-        ;; rec-clock (phasor:ar :trig stop? :rate 1 :end max-phasor-val )
-        rec-clock (in:ar rec-clock-bus 1)
-        loop-clock (* (= is-recording 0) (wrap:ar (- rec-clock start) 0 length))
-        tappera        (tap :my-tap 5 (a2k rec-clock))
+        ;; master-clock (phasor:ar :trig stop? :rate 1 :end max-phasor-val )
+        master-clock (in:ar masterclock-bus 1)
+        tapperl (tap :length 5 (a2k length ) )
+        loop-clock (* (= is-recording 0) (wrap:ar master-clock 0 length))
+        tapper (tap :clock 5 (a2k loop-clock) )
+        ;; loop-clock (* (= is-recording 0) (wrap:ar (- master-clock start) 0 length))
         ;; my-in (in:ar in-bus nr-chan)
         ;; buf (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
         ;; buf (disk-load start length)
@@ -181,14 +206,13 @@
         ]
     ;; (send-trig:kr now-bus 0 now-bus)
     (out:ar out-bus sig)
-    (out:kr 666 tappera)
     ))
 
 (show-graphviz-synth loop-play)
 
 (defsynth disk-play
   "play back a slave loop"
-  [ in-bus 50, out-bus 70, which-buf 7, rec-clock-bus 42, now-bus 1001]
+  [ in-bus 50, out-bus 70, which-buf 7, masterclock-bus 44, now-bus 1001]
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
@@ -197,8 +221,8 @@
         ;; start        (tap :my-tap 5 start)
         stop (latch:kr now (and new-now? (= is-recording 0)) )
         length (- stop start)
-        rec-clock (in:ar rec-clock-bus)
-        loop-clock (* (= is-recording 0) (wrap:ar rec-clock 0 length))
+        master-clock (in:ar masterclock-bus)
+        loop-clock (* (= is-recording 0) (wrap:ar master-clock 0 length))
         ;; my-in (in:ar in-bus nr-chan)
         ;; buf (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
         ;; buf (disk-load start length)
@@ -210,35 +234,6 @@
 
 (show-graphviz-synth disk-play)
 
-;; (show-graphviz-synth disk-rec+count)
-
-;; (defsynth disk-rec+count
-;;   "record a file and start counting frames, outputting them on trigger"
-;;   ;; [group rec-clock-bus now-bus trig ]
-;;   ;; [group 0, path "/tmp/openloop.wav", rec-clock-bus 42, now-bus 1001, trig [0 :tr]]
-;;   [ rec-clock-bus 42, now-bus 1001, trig [0 :tr]]
-;;   ;; [bus 0 trig 1]
-;;   (let
-;;       [
-;;        bs   (apply buffer-stream "tmp/openloop.wav" nr-chan "float")
-;;        ;; rec  (disk-recorder [:head group] bs)
-;;        rec  (disk-out bs (in 50 nr-chan) )
-;;        ;; rec  (disk-out bs (in 0 nr-chan) [:head group])
-;;        rec-clock (phasor:ar :trig 1 :end max-phasor-val ) ; start counting immediately
-;;        kr-clock (a2k rec-clock)
-;;        now (a2k (latch:ar rec-clock trig))
-;;        ]
-;;     ;; (defsynth rec []  (disk-out bs (in 0 nr-chan)))
-;;     ;; (rec)
-;;     (send-trig:kr trig 0 kr-clock)
-;;     (out:kr now-bus (* now trig))
-;;     ;; (out:kr now-bus now)
-;;     (out:ar rec-clock-bus rec-clock)
-;;     ;; bs
-;;     ;; rec
-;;     ;; (swap! fsm-state assoc-in [:value :recorder] {:rec-id rec :buf-stream bs})
-;;     ;; (disk-recording-start group "/tmp/openloop.wav" :n-chans nr-chan :samples "float")
-;;     ))
 
 (defn disk-recording-stop
   "Stop system-wide recording. This frees the file and writes the wav headers.

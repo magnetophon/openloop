@@ -8,9 +8,10 @@
   []
   (def in-group (group "in-group"))
   (def rec-group (group "rec-group" :after in-group))
-  (def play-master-group (group "play-master-group" :after rec-group))
-  (def play-slave-group (group "play-slave-group" :after play-master-group))
-  (def out-group (group "out-group" :after play-slave-group)))
+  (def play-group (group "play-group" :after rec-group))
+  ;; (def play-master-group (group "play-master-group" :after rec-group))
+  ;; (def play-slave-group (group "play-slave-group" :after play-master-group))
+  (def out-group (group "out-group" :after play-group)))
 
 (defn init
   "initialise"
@@ -46,32 +47,36 @@
   (buffer-fill! buffer7 0)
 
   (def in-synth (input [:head in-group]))
+  (disk-recording-start rec-group "/tmp/openloop.wav" :n-chans nr-chan :samples "float")
+  (def ram-rec-synth (ram-rec [:tail rec-group]))
+  (def master-clock-synth (master-clock [:tail rec-group]))
+  (def loop-play-synth (loop-play [:tail play-group]))
   (def out-synth (output [:head out-group]))
-  (def m-rec-synth (master-rec [:head rec-group]))
-  (def s-rec-synth1 (slave-rec [:tail rec-group] :which-buf 1 ))
+  ;; (def m-rec-synth (master-rec [:head rec-group]))
+  ;; (def s-rec-synth1 (slave-rec [:tail rec-group] :which-buf 1 ))
   ;; can't do this unless you use
   ;; hack around index-in-between xruns:
   ;; see above
   ;; (def m-play-synth (master-play [:head play-master-group]))
-  (pp-node-tree)
+  ;; (pp-node-tree)
   )
 
-(defn start-master
-  "start recording the master"
-  []
-  (ctl m-rec-synth :start 1)
-  )
+;; (defn start-master
+;;   "start recording the master"
+;;   []
+;;   (ctl m-rec-synth :start 1)
+;;   )
 
-(defn stop-master
-  "stop the master record and start playing it"
-  []
-  (ctl m-rec-synth :stop 1)
-  (def m-play-synth (master-play [:head play-master-group]))
-  )
+;; (defn stop-master
+;;   "stop the master record and start playing it"
+;;   []
+;;   (ctl m-rec-synth :stop 1)
+;;   (def m-play-synth (master-play [:head play-master-group]))
+;;   )
 
-(defn stop-slave
-  "stop the slave record and start playing it"
-  []
-  (ctl s-rec-synth1 :stop 1)
-  (def s-play-synth1 (slave-play [:head play-slave-group] :which-buf 1 ))
-  )
+;; (defn stop-slave
+;;   "stop the slave record and start playing it"
+;;   []
+;;   (ctl s-rec-synth1 :stop 1)
+;;   (def s-play-synth1 (slave-play [:head play-slave-group] :which-buf 1 ))
+;;   )
