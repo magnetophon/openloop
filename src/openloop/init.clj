@@ -15,6 +15,11 @@
 (defn init
   "initialise"
   []
+
+  (if disk-recording?
+    (do (println "stopping recording")
+        (recording-stop)
+        ))
   (clear-all)
   ;; (def SR (:sample-rate (server-info)))
   ;; (def max-loop-samples (* max-loop-seconds SR))
