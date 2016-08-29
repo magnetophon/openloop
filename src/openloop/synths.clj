@@ -139,20 +139,30 @@
 ;; (disk-load 100 1000)
 (defsynth master-clock
   "if we have no loops running, define the new master length"
-  [length-bus 80, rec-clock-bus 42  master-clock-bus 44, now-bus 1001]
+  [length-bus 80, rec-clock-bus 42  master-clock-bus 44, now-bus 1001, reset-bus 1002]
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
+        reset (in:kr reset-bus 1)
+        ;; is-recording (toggle-ff:kr new-now?)
+        ;; first-recording (set-reset-ff:kr new-now?)
+        ;; stop? (set-reset-ff:kr (and new-now? (= is-recording 0)))
+        ;; ;; start? (and new-now? (= first-recording 1))
+        ;; start (latch:kr now first-recording )
+        ;; stop (latch:kr now stop? )
+        ;; length (max (- stop start) 0 )
         is-recording (toggle-ff:kr new-now?)
-        first-recording (set-reset-ff:kr new-now?)
-        stop? (set-reset-ff:kr (and new-now? (= is-recording 0)))
-        ;; start? (and new-now? (= first-recording 1))
-        start (latch:kr now first-recording )
-        stop (latch:kr now stop? )
+        ;; is-recording        (tap :my-tap 5 is-recording)
+        start? (and new-now? (= is-recording 1))
+        stop? (and new-now? (= is-recording 0))
+        started? (set-reset-ff:kr start? reset) ; once start is pressed, stays 1 until we delete the loop
+        stopped? (set-reset-ff:kr stop? reset) ; once stop is pressed, stays 1 until we delete the loop
+        start (latch:kr now started? )
+        stop (latch:kr now stopped? )
         length (max (- stop start) 0 )
         ;; tappers (tap :start 5 start)
         ;; tappert (tap :stop 5 stop)
-        tapperl (tap :length 5 length)
+        ;; tapperl (tap :length 5 length)
         rec-clock (in:ar rec-clock-bus 1)
         ;; first-start (latch first-recording now)
         master-clock  (wrap:ar (- rec-clock start) 0 length)
@@ -167,11 +177,12 @@
 
 (defsynth ram-master-rec
   "record a loop to ram"
-  [ in-bus 50, out-bus 70, which-buf 0, master-clock-bus 44, now-bus 1001]
+  [ in-bus 50, out-bus 70, which-buf 0, master-clock-bus 44, now-bus 1001, reset-bus 1002]
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
-        is-recording (toggle-ff:kr new-now?)
+        reset (in:kr reset-bus 1)
+        is-recording (set-reset-ff:kr new-now? reset)
         ;; is-recording        (tap :my-tap 5 is-recording)
         my-in (in:ar in-bus nr-chan)
         ]
@@ -181,27 +192,35 @@
 
 (defsynth ram-slave-rec
   "record a loop to ram"
-  [ rec-clock-bus 42,  in-bus 50, out-bus 70, length-bus 80, which-buf 7, master-clock-bus 44, now-bus 1001 reset-bus 1002]
+  [ rec-clock-bus 42,  in-bus 50, out-bus 70, length-bus 80, which-buf 7, master-clock-bus 44, now-bus 1001, reset-bus 1002]
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
-        length (in:kr length-bus 1)
+        ;; length (in:kr length-bus 1)
         reset (in:kr reset-bus 1)
         rec-clock (in:ar rec-clock-bus 1) ; the disk-clock
         master-clock (in:ar master-clock-bus) ; the master-loop clock
-        have-master (not= 0 length) ; is there a master loop?
+        ;; have-master (not= 0 length) ; is there a master loop?
         ;; is recording would be kind of a misnomer, cause we a are always recording. this means that the user has told us that he wants to record
         wants-recording (toggle-ff:kr  new-now?)
-        is-recording (set-reset-ff (and wants-recording have-master) reset)
+
+        wants-start? (and new-now? (= wants-recording 1)) ;was start pressed?
+        ;; wants-stop? (and new-now? (= wants-recording 0)) ; was stop pressed
+
+        started? (set-reset-ff:kr wants-start? reset) ; once start is pressed, stays 1 until we delete the loop
+
+        ;; is-recording (set-reset-ff (and wants-recording have-master) reset)
         ;; first-half? (<= master-clock (/ length 2)) ; are we in the first half?
         master-start (latch:ar rec-clock (= 0 master-clock)) ; get a new start val every time the master passes 0
         ;; start (select:ar first-half? [master-start (+ master-start length )]) ; the starting point of the loop
         ;; extend-clock (min max-loop-length (- rec-clock start))
         ;; slave-clock (select:ar is-recording [master-clock extend-clock])
+        ;; gate:   Lets signal flow when trig is positive, otherwise holds last input value
+        actual-start (gate:ar master-start (= 0 started?) ) ; when did we start recording
 
+        ;; start (gate:ar master-start (= 0 is-recording))
 
-        start (gate:ar master-start (= 0 is-recording))
-        slave-clock (- rec-clock start)
+        slave-clock (- rec-clock actual-start)
         ;; is-recording        (tap :my-tap 5 is-recording)
         my-in (in:ar in-bus nr-chan)
         ]
@@ -214,21 +233,27 @@
 
 (defsynth loop-master-play
   "play back a master loop"
-  [ in-bus 50, out-bus 70, which-buf 0, rec-clock-bus 42, now-bus 1001]
+  [ in-bus 50, out-bus 70, which-buf 0, rec-clock-bus 42, master-clock-bus 44, now-bus 1001, reset-bus 1002]
   (let [
         now (in:kr now-bus 1)
+        master-clock (in:ar master-clock-bus) ; the master-loop clock
+        reset (in:kr reset-bus 1)
         new-now? (not= 0 now)
         is-recording (toggle-ff:kr new-now?)
         ;; is-recording        (tap :my-tap 5 is-recording)
-        stop? (and new-now? (= is-recording 0))
         start? (and new-now? (= is-recording 1))
-        start (latch:kr now start? )
-        stop (latch:kr now stop? )
+        stop? (and new-now? (= is-recording 0))
+        started? (set-reset-ff:kr start? reset) ; once start is pressed, stays 1 until we delete the loop
+        stopped? (set-reset-ff:kr stop? reset) ; once stop is pressed, stays 1 until we delete the loop
+        start (latch:kr now started? )
+        stop (latch:kr now stopped? )
         length (max (- stop start) 0 )
         ;; tapperl (tap :length 5 (a2k length ) )
         ;; master-clock (phasor:ar :trig stop? :rate 1 :end max-phasor-val )
         rec-clock (in:ar rec-clock-bus 1)
-        loop-clock (* (= is-recording 0) (wrap:ar (- rec-clock start) 0 length))
+        loop-clock (* stopped? master-clock)
+        ;; loop-clock (* stopped? (wrap:ar (- rec-clock start) 0 length))
+        ;; loop-clock (* (= is-recording 0) (wrap:ar (- rec-clock start) 0 length))
         ;; loop-clock (* (= is-recording 0) (wrap:ar master-clock 0 length))
         ;; tapper (tap :clock 5 (a2k loop-clock) )
         ;; loop-clock (* (= is-recording 0) (wrap:ar (- master-clock start) 0 length))
@@ -241,13 +266,13 @@
     (out:ar out-bus sig)
     ))
 
-;; (show-graphviz-synth loop-master-play)
+(show-graphviz-synth loop-master-play)
 
 (gate)
 
 (defsynth loop-slave-play
   "play back a slave loop"
-  [ in-bus 50, out-bus 70, length-bus 80, which-buf 7, rec-clock-bus 42, master-clock-bus 44, now-bus 1001, reset-bus 1002]
+  [ in-bus 50, out-bus 70, length-bus 80, which-buf 7, rec-clock-bus 42, master-clock-bus 44, now-bus 2000, reset-bus 1002]
   (let [
 
         ;; **************************************************************************************
@@ -278,9 +303,10 @@
         ;; first-half? (<= master-clock (/ length 2)) ; are we in the first half?
         ;; gate   Lets signal flow when trig is positive, otherwise holds last input value
 
-        wants-start (latch:ar now wants-start? ) ; the time when we pressed start
-        wants-stop (latch:ar now wants-stop? ) ; the time when we pressed stop
-        actual-start (latch:ar master-start started? )
+        wants-start (latch:ar now started? ) ; the time when we pressed start
+        wants-stop (latch:ar now stopped? ) ; the time when we pressed stop
+        ;; actual-start (latch:ar master-start started? ) ; when did we start recording
+        actual-start (gate:ar master-start (= 0 started?) ) ; when did we start recording
 
         start-offset (- wants-start actual-start) ; how far after the loop-recording started did we press start?
         wants-length  (max (- wants-stop wants-start) 0 ) ; many samples between start and stop
@@ -294,20 +320,16 @@
         ;; so the possible lengths are:
         ;; 0 1 2 4 8 16 32 64 and so on.
         ;; (pow (round (pow fraction 1/2)) 2) doesn't switch in the middle of the possible values, cause it switches in the log domain
-        prev-sensible-length  (pow (floor (pow fraction 1/2)) 2)
-        next-sensible-length  (pow (ceil (pow fraction 1/2)) 2)
+        log2fraction (log2 fraction)
+        prev-sensible-length  (pow 2 (floor log2fraction))
+        next-sensible-length  (pow 2 (ceil log2fraction))
         switch-point? (> fraction (/ (+ prev-sensible-length next-sensible-length) 2))
         naive-loop-length (select switch-point? [prev-sensible-length next-sensible-length]) ; doesn't do the right thing for short rec periods, hence naive
         corner-case-length (select
                             (> fraction  0.5) ; if we record less then half a master-length, assume it was a fluke,
                             [0
-                             (select
-                              (> fraction 1.5) ; between 0.5 and 1.5 we want a loop as long as the master loop
-                              [1
-                               (select
-                                (> fraction 3) ; between 1.5 and 3 we want 2 loops, otherwise use naive-loop-length
-                                [2
-                                 naive-loop-length])]) ])
+                             naive-loop-length
+                             ])
         ;; todo: make a version that goes:
         ;; 0 1 2 3 4 6 8 12 16 24 32 48
         ;; or:
@@ -339,8 +361,8 @@
     ;; (send-trig:kr now-bus 0 now-bus)
     (out:ar out-bus sig)
     ;; (send-trig:kr new-now? 42 (a2k corner-case-length) )
-    (send-trig:kr (impulse:kr 1) 42 (a2k rec-clock ) )
-    (send-trig:kr (impulse:kr 1) 41 (a2k actual-start ) )
+    (send-trig:kr (impulse:kr 1) 42 (a2k prev-sensible-length ) )
+    ;; (send-trig:kr (impulse:kr 1) 41 (a2k actual-start ) )
 
     ))
 

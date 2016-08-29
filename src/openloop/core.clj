@@ -24,12 +24,22 @@
   (init)
   )
 
+(defn switch-to-slave
+  []
+  ;; (ctl loop-master-play-synth  :now-bus 2000)
+  ;; (ctl master-clock-synth  :now-bus 2000)
+  (ctl ram-slave-rec-synth   :now-bus 1001)
+  (ctl loop-slave-play-synth2  :now-bus 1001)
+)
+
+(on-event "/tr" #(println "event: " % (msg2int %)) ::index-synth)
+(remove-event-handler ::index-synth)
+
 (-main)
 (pp-node-tree)
 (init)
 (ctl (:rec-id (:recorder (:value @fsm-state)))  :trig 1)
-(ctl loop-master-play-synth  :now-bus 2000)
-(ctl loop-slave-play-synth2  :now-bus 1001)
+(switch-to-slave)
 @(get-in master-clock-synth [:taps :length ])
 @(get-in loop-master-play-synth [:taps :clock ])
 @(get-in ram-master-rec-synth [:taps :my-tap])

@@ -8,7 +8,15 @@
 ;; max loop length is just a few samples while designing the data structures
 ;; (def max-loop-length 8)
 ;; for now we fix the SR that spec uses, cause to get the real SR we need a booted server
-(def max-loop-length (* 44100 max-loop-seconds))
+;; from the help of buf-rd:
+;; The phase argument only offers precision for addressing 2**24 samples (about 6.3 minutes at 44100Hz).
+(def max-loop-length
+  (let [wanted-length (* 44100 max-loop-seconds) ]
+    (min wanted-length 16777216)
+  )
+
+
+  )
 ;; (s/exercise ::loop-audio-type 2)
 (def max-undo-nr 16)
 (def max-sources-nr 128)
