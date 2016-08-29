@@ -196,11 +196,11 @@
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
-        length (in:kr length-bus 1)
+        ;; length (in:kr length-bus 1)
         reset (in:kr reset-bus 1)
         rec-clock (in:ar rec-clock-bus 1) ; the disk-clock
         master-clock (in:ar master-clock-bus) ; the master-loop clock
-        have-master (not= 0 length) ; is there a master loop?
+        ;; have-master (not= 0 length) ; is there a master loop?
         ;; is recording would be kind of a misnomer, cause we a are always recording. this means that the user has told us that he wants to record
         wants-recording (toggle-ff:kr  new-now?)
 
@@ -224,7 +224,6 @@
                                  [master-start
                                   actual-start])
 
-        ;; start (gate:ar master-start (= 0 is-recording))
 
         slave-clock (- rec-clock try-record-start )
         ;; is-recording        (tap :my-tap 5 is-recording)
@@ -248,16 +247,16 @@
         new-now? (not= 0 now)
         is-recording (toggle-ff:kr new-now?)
         ;; is-recording        (tap :my-tap 5 is-recording)
-        start? (and new-now? (= is-recording 1))
+        ;; start? (and new-now? (= is-recording 1))
         stop? (and new-now? (= is-recording 0))
-        started? (set-reset-ff:kr start? reset) ; once start is pressed, stays 1 until we delete the loop
+        ;; started? (set-reset-ff:kr start? reset) ; once start is pressed, stays 1 until we delete the loop
         stopped? (set-reset-ff:kr stop? reset) ; once stop is pressed, stays 1 until we delete the loop
-        start (latch:kr now started? )
-        stop (latch:kr now stopped? )
-        length (max (- stop start) 0 )
+        ;; start (latch:kr now started? )
+        ;; stop (latch:kr now stopped? )
+        ;; length (max (- stop start) 0 )
         ;; tapperl (tap :length 5 (a2k length ) )
         ;; master-clock (phasor:ar :trig stop? :rate 1 :end max-phasor-val )
-        rec-clock (in:ar rec-clock-bus 1)
+        ;; rec-clock (in:ar rec-clock-bus 1)
         loop-clock (* stopped? master-clock)
         ;; loop-clock (* stopped? (wrap:ar (- rec-clock start) 0 length))
         ;; loop-clock (* (= is-recording 0) (wrap:ar (- rec-clock start) 0 length))
@@ -310,10 +309,16 @@
         ;; first-half? (<= master-clock (/ length 2)) ; are we in the first half?
         ;; gate   Lets signal flow when trig is positive, otherwise holds last input value
 
-        wants-start (latch:ar now started? ) ; the time when we pressed start
-        wants-stop (latch:ar now stopped? ) ; the time when we pressed stop
+        wants-start (latch:kr now started? ) ; the time when we pressed start
+        wants-stop (latch:kr now stopped? ) ; the time when we pressed stop
         ;; actual-start (latch:ar master-start started? ) ; when did we start recording
-        actual-start (gate:ar master-start (= 0 started?) ) ; when did we start recording
+        ;; actual-start (gate:ar master-start (= 0 started?) ) ; when did we start recording
+        actual-start (- (latch:ar master-start started?) master-length) ; when did we start recording
+
+        ;; try-record-start (select started?
+        ;;                          [master-start
+        ;;                           actual-start])
+
 
         start-offset (- wants-start actual-start) ; how far after the loop-recording started did we press start?
         wants-length  (max 0 (- wants-stop wants-start) ) ; many samples between start and stop
@@ -331,10 +336,10 @@
         prev-sensible-length  (pow 2 (floor log2fraction))
         next-sensible-length  (pow 2 (ceil log2fraction))
         switch-point? (> fraction (/ (+ prev-sensible-length next-sensible-length) 2))
-        naive-loop-length (select switch-point? [prev-sensible-length next-sensible-length]) ; doesn't do the right thing for short rec periods, hence naive
-        corner-case-length (select
-                            (> fraction  0.5) ; if we record less then half a master-length, assume it was a fluke,
-                            [0
+        naive-loop-length (select:kr switch-point? [prev-sensible-length next-sensible-length]) ; doesn't do the right thing for short rec periods, hence naive
+        corner-case-length (select:kr
+                            (> fraction  1.5) ; if we record less then  one and a half a master-length, assume 1 loop
+                            [1
                              naive-loop-length
                              ])
         ;; todo: make a version that goes:
@@ -348,11 +353,14 @@
         ;; **************************************************************************************
 
         loop-length (* master-length corner-case-length)
+        ;; loop-length (* master-length (max 1 naive-loop-length))
 
-        next-block? (>= rec-clock (+ actual-start loop-length ))
-        should-play? (and next-block? (= wants-recording 0))
+        next-block? (> rec-clock (+ actual-start loop-length start-offset ))
+        should-play? (and next-block? stopped?)
 
-        loop-clock (* should-play? (+ start-offset (wrap:ar (- rec-clock actual-start) 0 loop-length)))
+
+
+        loop-clock (* should-play? (+ start-offset (wrap:ar (- rec-clock  actual-start  start-offset) 0 loop-length)))
 
         ;; tapperl (tap :length 5 (a2k length ) )
         ;; master-clock (phasor:ar :trig stop? :rate 1 :end max-phasor-val )
