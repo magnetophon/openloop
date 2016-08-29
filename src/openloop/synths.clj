@@ -94,7 +94,7 @@
         ;; kr-clock (tap :my-tap 5 kr-clock)
         now (a2k (latch:ar rec-clock trig))
         audio-in (in in-bus nr-chan)]
-    (send-trig:kr trig 0 kr-clock)
+    ;; (send-trig:kr trig 0 kr-clock)
     (out:kr now-bus (* now trig))
     ;; (out:ar rec-clock-bus (dc:ar 42))
     ;; (out:ar rec-clock-bus audio-in)
@@ -247,7 +247,7 @@
 
 (defsynth loop-slave-play
   "play back a slave loop"
-  [ in-bus 50, out-bus 70, length-bus 80, which-buf 0, rec-clock-bus 42, master-clock-bus 44, now-bus 1001, reset-bus 1002]
+  [ in-bus 50, out-bus 70, length-bus 80, which-buf 7, rec-clock-bus 42, master-clock-bus 44, now-bus 1001, reset-bus 1002]
   (let [
 
         ;; **************************************************************************************
@@ -320,8 +320,7 @@
 
         loop-length (* master-length corner-case-length)
 
-        next-block? (= rec-clock (+ actual-start loop-length ))
-
+        next-block? (>= rec-clock (+ actual-start loop-length ))
         should-play? (and next-block? (= wants-recording 0))
 
         loop-clock (* should-play? (+ start-offset (wrap:ar (- rec-clock actual-start) 0 loop-length)))
@@ -339,6 +338,10 @@
         ]
     ;; (send-trig:kr now-bus 0 now-bus)
     (out:ar out-bus sig)
+    ;; (send-trig:kr new-now? 42 (a2k corner-case-length) )
+    (send-trig:kr (impulse:kr 1) 42 (a2k rec-clock ) )
+    (send-trig:kr (impulse:kr 1) 41 (a2k actual-start ) )
+
     ))
 
 (show-graphviz-synth loop-slave-play)
