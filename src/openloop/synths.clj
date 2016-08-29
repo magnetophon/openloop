@@ -192,21 +192,22 @@
 
 (defsynth ram-slave-rec
   "record a loop to ram"
-  [ rec-clock-bus 42,  in-bus 50, out-bus 70, length-bus 80, which-buf 7, master-clock-bus 44, now-bus 1001, reset-bus 1002]
+  [ rec-clock-bus 42,  in-bus 50, out-bus 70, length-bus 80, which-buf 7, master-clock-bus 44, now-bus 2000, reset-bus 1002]
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
-        ;; length (in:kr length-bus 1)
+        length (in:kr length-bus 1)
         reset (in:kr reset-bus 1)
         rec-clock (in:ar rec-clock-bus 1) ; the disk-clock
         master-clock (in:ar master-clock-bus) ; the master-loop clock
-        ;; have-master (not= 0 length) ; is there a master loop?
+        have-master (not= 0 length) ; is there a master loop?
         ;; is recording would be kind of a misnomer, cause we a are always recording. this means that the user has told us that he wants to record
         wants-recording (toggle-ff:kr  new-now?)
 
         wants-start? (and new-now? (= wants-recording 1)) ;was start pressed?
         ;; wants-stop? (and new-now? (= wants-recording 0)) ; was stop pressed
 
+        ;; started? (set-reset-ff:kr wants-start? reset) ; once start is pressed, stays 1 until we delete the loop
         started? (set-reset-ff:kr wants-start? reset) ; once start is pressed, stays 1 until we delete the loop
 
         ;; is-recording (set-reset-ff (and wants-recording have-master) reset)
@@ -216,15 +217,21 @@
         ;; extend-clock (min max-loop-length (- rec-clock start))
         ;; slave-clock (select:ar is-recording [master-clock extend-clock])
         ;; gate:   Lets signal flow when trig is positive, otherwise holds last input value
-        actual-start (gate:ar master-start (= 0 started?) ) ; when did we start recording
+        ;; actual-start (gate:ar master-start (and have-master (= 0 started?)) ) ; when did we start recording
+        actual-start (latch:ar master-start started?) ; when did we start recording
+
+        try-record-start (select started?
+                                 [master-start
+                                  actual-start])
 
         ;; start (gate:ar master-start (= 0 is-recording))
 
-        slave-clock (- rec-clock actual-start)
+        slave-clock (- rec-clock try-record-start )
         ;; is-recording        (tap :my-tap 5 is-recording)
         my-in (in:ar in-bus nr-chan)
         ]
     (buf-wr:ar my-in which-buf slave-clock 0 )
+    (send-trig:kr (impulse:kr 1) 66 (a2k actual-start) )
     ;; (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
     ;; (out:ar rec-clock-bus rec-clock)
     ))
@@ -309,7 +316,7 @@
         actual-start (gate:ar master-start (= 0 started?) ) ; when did we start recording
 
         start-offset (- wants-start actual-start) ; how far after the loop-recording started did we press start?
-        wants-length  (max (- wants-stop wants-start) 0 ) ; many samples between start and stop
+        wants-length  (max 0 (- wants-stop wants-start) ) ; many samples between start and stop
         ;; **************************************************************************************
         ;; this block has lengths expressed in nr of master loops
         ;; **************************************************************************************
@@ -361,7 +368,7 @@
     ;; (send-trig:kr now-bus 0 now-bus)
     (out:ar out-bus sig)
     ;; (send-trig:kr new-now? 42 (a2k corner-case-length) )
-    (send-trig:kr (impulse:kr 1) 42 (a2k prev-sensible-length ) )
+    ;; (send-trig:kr (impulse:kr 1) 42 (a2k prev-sensible-length ) )
     ;; (send-trig:kr (impulse:kr 1) 41 (a2k actual-start ) )
 
     ))
