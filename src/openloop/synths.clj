@@ -368,20 +368,51 @@
         ;; should-play? stopped?
         should-play? (and next-block? stopped?)
 
-        ;; loop-clock (* should-play? (- (+ start-offset (wrap:ar (- rec-clock actual-start  start-offset) 0 loop-length)) master-length))
+
+        ;; loop-clock (* should-play?
+        ;;               (-
+        ;;                (+ start-offset
+        ;;                   (wrap:ar (- rec-clock actual-start  start-offset) 0 loop-length))
+        ;;                master-length))
         ;; loop-clock (* should-play? (+ start-offset (phasor:ar started? 1 0 loop-length)))
+
+        ;; starts OK, doesn't play end:
+        ;; loop-clock (* should-play?
+        ;;               (-
+        ;;                (+
+        ;;                 (wrap:ar
+        ;;                  (+ start-offset
+        ;;                     (-
+        ;;                      (phasor:ar (and (=  0 master-clock) (= 0  should-play?)) 1 0  loop-length)
+        ;;                      master-length
+        ;;                      master-length
+        ;;                      )
+        ;;                     )
+        ;;                  0 loop-length)
+        ;;                 master-length
+        ;;                 master-length
+        ;;                 )
+        ;;                start-offset )
+        ;; )
+
         loop-clock (* should-play?
-                      ;; (-
-                      ;; (+ start-offset
-                      ;; (wrap:ar
-                      (phasor:ar (and (= 0 master-clock) (= 0  should-play?)) 1 0  loop-length)
-                      ;; 0 loop-length)
-                      ;; )
-                      ;; (wrap:ar
-                      ;;  (- (phasor:ar (and (= 0 master-clock) (= 0  should-play?)) 1 0  loop-length) start-offset)
-                      ;;  0 loop-length))
-                      ;; master-length )
+                      (+
+                       (-
+                        (wrap:ar
+                         (-
+                          (+
+                           (phasor:ar (and (=  0 master-clock) (= 0  should-play?)) 1 0  loop-length)
+                           master-length)
+                          start-offset)
+                         0 loop-length)
+                        master-length)
+                       start-offset )
                       )
+
+        ;; 0 loop-length)
+        ;; (wrap:ar
+        ;;  (- (phasor:ar (and (= 0 master-clock) (= 0  should-play?)) 1 0  loop-length) start-offset)
+        ;;  0 loop-length))
         sig (buf-rd:ar nr-chan which-buf loop-clock 0 1)
         ]
     ;; (send-trig:kr now-bus 0 now-bus)
