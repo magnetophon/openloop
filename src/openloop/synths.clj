@@ -88,8 +88,8 @@
   "record a file and start counting frames, outputting them on trigger"
   [out-buf 0, rec-clock-bus 42, in-bus 50, now-bus 1001, trig [0 :tr]]
   (let [
-        rec-clock (phasor:ar :trig 1 :end max-phasor-val ) ; start counting immediately
-        ;; rec-clock (sweep:ar 1 SR)
+        ;; rec-clock (phasor:ar :trig 1 :end max-phasor-val ) ; start counting immediately
+        rec-clock (sweep:ar 1 SR)
         kr-clock (a2k rec-clock)
         ;; kr-clock (tap :my-tap 5 kr-clock)
         now (a2k (latch:ar rec-clock trig))
@@ -165,7 +165,8 @@
         ;; tapperl (tap :length 5 length)
         rec-clock (in:ar rec-clock-bus 1)
         ;; first-start (latch first-recording now)
-        master-clock  (wrap:ar (- rec-clock start) 0 length)
+        ;; master-clock  (wrap:ar (- rec-clock start) 0 length)
+        master-clock (phasor:ar :trig started?  :end length )
         ]
     (out:kr length-bus length )
     (out:ar master-clock-bus master-clock )
@@ -223,14 +224,18 @@
         try-record-start (select started?
                                  [master-start
                                   actual-start])
+        reset-rec? (and (= 0 master-clock) (= 0 started?))
 
 
-        slave-clock (- rec-clock try-record-start )
+        ;; slave-clock (- rec-clock try-record-start )
+        slave-clock (sweep:ar reset-rec? SR)
+
+
         ;; is-recording        (tap :my-tap 5 is-recording)
         my-in (in:ar in-bus nr-chan)
         ]
     (buf-wr:ar my-in which-buf slave-clock 0 )
-    (send-trig:kr (impulse:kr 1) 66 (a2k actual-start) )
+    ;; (send-trig:kr (impulse:kr 1) 66 (a2k actual-start) )
     ;; (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
     ;; (out:ar rec-clock-bus rec-clock)
     ))
@@ -267,8 +272,11 @@
         ;; buf (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
         ;; buf (disk-load start length)
         sig (buf-rd:ar nr-chan which-buf loop-clock 0 1)
+        ;; send? (> 10 (a2k loop-clock) 12)
+        send? (impulse:kr 1)
         ]
     ;; (send-trig:kr now-bus 0 now-bus)
+    (send-trig:kr send? 42 (a2k loop-clock) )
     (out:ar out-bus sig)
     ))
 
@@ -360,9 +368,20 @@
         ;; should-play? stopped?
         should-play? (and next-block? stopped?)
 
-        ;; OK, but misses upbeat:
-        ;; loop-clock (* should-play?                  (+ start-offset (wrap:ar (- rec-clock actual-start  start-offset) 0 loop-length)))
-        loop-clock (* should-play?                 (- (+ start-offset (wrap:ar (- rec-clock actual-start  start-offset) 0 loop-length)) master-length))
+        ;; loop-clock (* should-play? (- (+ start-offset (wrap:ar (- rec-clock actual-start  start-offset) 0 loop-length)) master-length))
+        ;; loop-clock (* should-play? (+ start-offset (phasor:ar started? 1 0 loop-length)))
+        loop-clock (* should-play?
+                      ;; (-
+                      ;; (+ start-offset
+                      ;; (wrap:ar
+                      (phasor:ar (and (= 0 master-clock) (= 0  should-play?)) 1 0  loop-length)
+                      ;; 0 loop-length)
+                      ;; )
+                      ;; (wrap:ar
+                      ;;  (- (phasor:ar (and (= 0 master-clock) (= 0  should-play?)) 1 0  loop-length) start-offset)
+                      ;;  0 loop-length))
+                      ;; master-length )
+                      )
         sig (buf-rd:ar nr-chan which-buf loop-clock 0 1)
         ]
     ;; (send-trig:kr now-bus 0 now-bus)
