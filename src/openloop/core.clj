@@ -40,6 +40,13 @@
 (init)
 (ctl (:rec-id (:recorder (:value @fsm-state)))  :trig 1)
 (switch-to-slave)
+(def play7synth (play7 [:tail play-group]))
+(play7synth)
+(defsynth play7
+  []
+
+  (out:ar 70 (buf-rd:ar nr-chan 7 (phasor:ar :trig 1 :end max-phasor-val ) 0 1))
+  )
 @(get-in master-clock-synth [:taps :length ])
 @(get-in loop-master-play-synth [:taps :clock ])
 @(get-in ram-master-rec-synth [:taps :my-tap])

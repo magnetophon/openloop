@@ -356,22 +356,14 @@
         ;; loop-length (* master-length (max 1 naive-loop-length))
 
         next-block? (> rec-clock (+ actual-start loop-length start-offset ))
+        ;; next-block? (> rec-clock (+ actual-start loop-length ))
+        ;; should-play? stopped?
         should-play? (and next-block? stopped?)
 
-
-
-        loop-clock (* should-play? (+ start-offset (wrap:ar (- rec-clock  actual-start  start-offset) 0 loop-length)))
-
-        ;; tapperl (tap :length 5 (a2k length ) )
-        ;; master-clock (phasor:ar :trig stop? :rate 1 :end max-phasor-val )
-        ;; loop-clock (* (= is-recording 0) (wrap:ar master-clock 0 length))
-        ;; tapper (tap :clock 5 (a2k loop-clock) )
-        ;; loop-clock (* (= is-recording 0) (wrap:ar (- master-clock start) 0 length))
-        ;; my-in (in:ar in-bus nr-chan)
-        ;; buf (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
-        ;; buf (disk-load start length)
+        ;; OK, but misses upbeat:
+        ;; loop-clock (* should-play?                  (+ start-offset (wrap:ar (- rec-clock actual-start  start-offset) 0 loop-length)))
+        loop-clock (* should-play?                 (- (+ start-offset (wrap:ar (- rec-clock actual-start  start-offset) 0 loop-length)) master-length))
         sig (buf-rd:ar nr-chan which-buf loop-clock 0 1)
-        ;; sig (dc:ar 42)
         ]
     ;; (send-trig:kr now-bus 0 now-bus)
     (out:ar out-bus sig)
