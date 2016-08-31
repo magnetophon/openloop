@@ -167,6 +167,10 @@ maybe use https://github.com/ztellman/automat
 
 
 ** inspirational libs:
+*** https://sc3howto.blogspot.nl/2014/05/how-to-keep-installation-running.html
+**** auto-crash recovery
+*** https://github.com/triss/nrt-sc
+**** A Clojure library designed to ease the generation of scores for offline rendering by the SuperCollider server.
 *** http://onloop.net/tenor/
 **** Generating accessible music with Clojure and Overtone (and a primer in Music theory)
 *** https://github.com/candera/dynne
