@@ -29,7 +29,7 @@
   ;; (ctl loop-master-play-synth  :now-bus 2000)
   ;; (ctl master-clock-synth  :now-bus 2000)
   (ctl ram-slave-rec-synth   :now-bus 1001)
-  (ctl loop-slave-play-synth2  :now-bus 1001)
+  (ctl slave-play-synth0  :now-bus 1001)
 )
 
 (on-event "/tr" #(println "event: " % (msg2int %)) ::index-synth)
@@ -202,10 +202,6 @@
   (show-graphviz-synth slave-play3)
   (clear-all)
   (control-bus-monitor)
-  (dotimes [i   nr-loops]
-    (let [bufname (str "buffer" i)]
-      ;; (buffer-fill! (symbol bufname) 0)
-      (println (symbol bufname))))
 
   (server-num-buffers)
   (server-num-audio-buses)
