@@ -50,7 +50,7 @@
     ;; (def test (+ (* 0.5 (decay downbeat 0.1) (sin-osc 880)) sig))
     (out:ar out-bus sig)))
 
-(defsynth slave-play
+(defsynth old-slave-play
   "play back a slave loop"
   [rate 1 jump [0 :tr] length-mul 1 which-buf 0 del 0 atk-thres 0.002 amp 1 nr-bars-bus 100 downbeat-bus 90 length-bus 80 out-bus 70]
   (let [
@@ -173,7 +173,7 @@
     )
   )
 
-(show-graphviz-synth master-clock)
+;; (show-graphviz-synth master-clock)
 
 
 (defsynth ram-master-rec
@@ -240,7 +240,7 @@
     ;; (out:ar rec-clock-bus rec-clock)
     ))
 
-(show-graphviz-synth ram-slave-rec)
+;; (show-graphviz-synth ram-slave-rec)
 
 (defsynth loop-master-play
   "play back a master loop"
@@ -280,7 +280,7 @@
     (out:ar out-bus sig)
     ))
 
-(show-graphviz-synth loop-master-play)
+;; (show-graphviz-synth loop-master-play)
 
 (gate)
 
@@ -375,26 +375,6 @@
         ;;                   (wrap:ar (- rec-clock actual-start  start-offset) 0 loop-length))
         ;;                master-length))
         ;; loop-clock (* should-play? (+ start-offset (phasor:ar started? 1 0 loop-length)))
-
-        ;; starts OK, doesn't play end:
-        ;; loop-clock (* should-play?
-        ;;               (-
-        ;;                (+
-        ;;                 (wrap:ar
-        ;;                  (+ start-offset
-        ;;                     (-
-        ;;                      (phasor:ar (and (=  0 master-clock) (= 0  should-play?)) 1 0  loop-length)
-        ;;                      master-length
-        ;;                      master-length
-        ;;                      )
-        ;;                     )
-        ;;                  0 loop-length)
-        ;;                 master-length
-        ;;                 master-length
-        ;;                 )
-        ;;                start-offset )
-        ;; )
-
         loop-clock (* should-play?
                       (+
                        (-
@@ -422,8 +402,12 @@
     ;; (send-trig:kr (impulse:kr 1) 41 (a2k actual-start ) )
 
     ))
+(defsynth slave-play
+  "play a slave loop"
+  []
+  )
 
-(show-graphviz-synth loop-slave-play)
+;; (show-graphviz-synth loop-slave-play)
 
 (defsynth disk-play
   "play back a slave loop"
@@ -447,7 +431,7 @@
     (out:ar out-bus sig)
     ))
 
-(show-graphviz-synth disk-play)
+;; (show-graphviz-synth disk-play)
 
 
 (defn disk-recording-stop
