@@ -402,10 +402,6 @@
     ;; (send-trig:kr (impulse:kr 1) 41 (a2k actual-start ) )
 
     ))
-(defsynth slave-play
-  "play a slave loop"
-  []
-  )
 
 ;; (show-graphviz-synth loop-slave-play)
 
