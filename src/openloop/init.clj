@@ -19,7 +19,7 @@
   [i]
   (let [bufname (str "buffer" i)
         ]
-    (eval `(defonce ~(symbol bufname)  (buffer max-loop-samples nr-chan bufname)))
+    (eval `(defonce ~(symbol bufname)  (buffer max-loop-samples nr-chan ~(symbol bufname))))
     ))
 
 (defn clearbuf
