@@ -28,9 +28,10 @@
   []
   ;; (ctl loop-master-play-synth  :now-bus 2000)
   ;; (ctl master-clock-synth  :now-bus 2000)
-  (ctl ram-slave-rec-synth   :now-bus 1001)
-  (ctl play-synth0  :now-bus 1001)
-  (ctl play-synth1  :now-bus 1001)
+  (ctl slave-rec-synth   :now-bus 1001)
+  (ctl play-synth7  :now-bus 1001)
+  ;; (ctl play-synth1  :now-bus 1001)
+  ;; (ctl slave-rec-synth  :which-buf 1)
   )
 
 (on-event "/tr" #(println "event: " % (msg2int %)) ::index-synth)

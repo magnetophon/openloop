@@ -23,7 +23,7 @@
     (out:kr timer-bus my-timer)
     (record-buf:ar my-in which-buf 0 1 0 is-recording loop)))
 
-(defsynth slave-rec
+(defsynth old-slave-rec
   "records the slave loops"
   [start [0 :tr] stop [0 :tr] in-bus 50 loop 1 which-buf 0]
   (let [
@@ -191,7 +191,7 @@
     ;; (out:ar rec-clock-bus rec-clock)
     ))
 
-(defsynth ram-slave-rec
+(defsynth slave-rec
   "record a loop to ram"
   [ rec-clock-bus 42,  in-bus 50, out-bus 70, length-bus 80, which-buf 7, master-clock-bus 44, now-bus 2000, reset-bus 1002]
   (let [
@@ -240,7 +240,7 @@
     ;; (out:ar rec-clock-bus rec-clock)
     ))
 
-;; (show-graphviz-synth ram-slave-rec)
+;; (show-graphviz-synth slave-rec)
 
 (defsynth loop-master-play
   "play back a master loop"
