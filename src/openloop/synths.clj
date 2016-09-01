@@ -193,12 +193,12 @@
 
 (defsynth loop-rec
   "record a loop to ram"
-  [ rec-clock-bus 42,  in-bus 50, out-bus 70, length-bus 80, which-buf 0, master-clock-bus 44, now-bus 1001, reset-bus 1002]
+  [ rec-clock-bus 42,  in-bus 50, out-bus 70, length-bus 80, which-buf 0, master-clock-bus 44, now-bus 1001, reset [0 :tr]]
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
         length (in:kr length-bus 1)
-        reset (in:kr reset-bus 1)
+        ;; reset (in:kr reset-bus 1)
         ;; rec-clock (in:ar rec-clock-bus 1) ; the disk-clock
         master-clock (in:ar master-clock-bus) ; the master-loop clock
         ;; is recording would be kind of a misnomer, cause we a are always recording. this means that the user has told us that he wants to record
@@ -286,7 +286,7 @@
 
 (defsynth loop-play
   "play back a slave loop"
-  [ in-bus 50, out-bus 70, length-bus 80, which-buf 0, rec-clock-bus 42, master-clock-bus 44, now-bus 1001, reset-bus 1002]
+  [ in-bus 50, out-bus 70, length-bus 80, which-buf 0, rec-clock-bus 42, master-clock-bus 44, now-bus 2000, reset-bus 1002]
   (let [
 
         ;; **************************************************************************************

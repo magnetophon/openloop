@@ -24,15 +24,22 @@
   (init)
   )
 
-(defn switch-to-slave
-  []
-  ;; (ctl loop-master-play-synth  :now-bus 2000)
-  ;; (ctl master-clock-synth  :now-bus 2000)
-  (ctl loop-rec-synth   which-buf 1)
-  (ctl play-synth7  :now-bus 1001)
-  ;; (ctl play-synth1  :now-bus 1001)
-  ;; (ctl slave-rec-synth  :which-buf 1)
-  )
+(defn switch-to-i
+  [i]
+  (let [player (str "play-synth" i) ]
+
+
+    ;; (ctl loop-master-play-synth  :now-bus 2000)
+    ;; (ctl master-clock-synth  :now-bus 2000)
+    (ctl loop-rec-synth   :which-buf (eval i))
+    (ctl loop-rec-synth   :reset 1)
+    (ctl (eval (symbol player))  :which-buf (eval i))
+    (ctl (eval (symbol player))  :now-bus 1001)
+    ;; (ctl play-synth1  :now-bus 1001)
+    ;; (ctl slave-rec-synth  :which-buf 1)
+    ))
+
+(ctl play-synth0  :now-bus 2000)
 
 (on-event "/tr" #(println "event: " % (msg2int %)) ::index-synth)
 (remove-event-handler ::index-synth)
@@ -41,13 +48,16 @@
 (pp-node-tree)
 (init)
 (ctl (:rec-id (:recorder (:value @fsm-state)))  :trig 1)
-(switch-to-slave)
-(def play7synth (play7 [:tail play-group]))
+(switch-to-i 0)
+(switch-to-i 1)
+(switch-to-i 2)
+(def play1synth (play1 [:tail play-group]))
+(kill play1synth)
 (play7synth)
-(defsynth play7
+(defsynth play1
   []
 
-  (out:ar 70 (buf-rd:ar nr-chan 7 (phasor:ar :trig 1 :end max-phasor-val ) 0 1))
+  (out:ar 70 (buf-rd:ar nr-chan 1 (phasor:ar :trig 1 :end max-phasor-val ) 0 1))
   )
 @(get-in master-clock-synth [:taps :length ])
 @(get-in loop-master-play-synth [:taps :clock ])

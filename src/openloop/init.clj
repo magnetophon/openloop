@@ -108,7 +108,6 @@
   (def loop-rec-synth (loop-rec [:tail rec-group]))
   ;; (def loop-play-synth (loop-play [:tail play-group]))
   ;; (ctl loop-play-synth  :which-buf 7)
-  ;; (ctl loop-play-synth  :now-bus 2000)
   (def out-synth (output [:head out-group]))
   ;; (def m-rec-synth (master-rec [:head rec-group]))
   ;; (def s-rec-synth1 (slave-rec [:tail rec-group] :which-buf 1 ))
