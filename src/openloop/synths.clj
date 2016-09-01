@@ -284,7 +284,7 @@
 
 (gate)
 
-(defsynth loop-slave-play
+(defsynth loop-play
   "play back a slave loop"
   [ in-bus 50, out-bus 70, length-bus 80, which-buf 7, rec-clock-bus 42, master-clock-bus 44, now-bus 2000, reset-bus 1002]
   (let [

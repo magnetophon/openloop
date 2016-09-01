@@ -29,8 +29,9 @@
   ;; (ctl loop-master-play-synth  :now-bus 2000)
   ;; (ctl master-clock-synth  :now-bus 2000)
   (ctl ram-slave-rec-synth   :now-bus 1001)
-  (ctl slave-play-synth0  :now-bus 1001)
-)
+  (ctl play-synth0  :now-bus 1001)
+  (ctl play-synth1  :now-bus 1001)
+  )
 
 (on-event "/tr" #(println "event: " % (msg2int %)) ::index-synth)
 (remove-event-handler ::index-synth)
@@ -199,7 +200,7 @@
 
 (comment
 
-  (show-graphviz-synth slave-play3)
+  (show-graphviz-synth loop-play3)
   (clear-all)
   (control-bus-monitor)
 

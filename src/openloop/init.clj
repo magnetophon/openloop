@@ -38,9 +38,9 @@
   "create a loop player"
   [i]
   (let
-      [name (str "slave-play-synth" i)
+      [name (str "play-synth" i)
        ]
-    (eval `(def ~(symbol name) (loop-slave-play [:tail play-group])))
+    (eval `(def ~(symbol name) (loop-play  [:tail play-group])))
     ))
 
 
@@ -106,9 +106,9 @@
   (def ram-master-rec-synth (ram-master-rec [:tail rec-group]))
   (def loop-master-play-synth (loop-master-play [:tail play-group]))
   (def ram-slave-rec-synth (ram-slave-rec [:tail rec-group]))
-  ;; (def loop-slave-play-synth (loop-slave-play [:tail play-group]))
-  ;; (ctl loop-slave-play-synth  :which-buf 7)
-  ;; (ctl loop-slave-play-synth  :now-bus 2000)
+  ;; (def loop-play-synth (loop-play [:tail play-group]))
+  ;; (ctl loop-play-synth  :which-buf 7)
+  ;; (ctl loop-play-synth  :now-bus 2000)
   (def out-synth (output [:head out-group]))
   ;; (def m-rec-synth (master-rec [:head rec-group]))
   ;; (def s-rec-synth1 (slave-rec [:tail rec-group] :which-buf 1 ))
@@ -147,5 +147,5 @@
 ;;   "stop the slave record and start playing it"
 ;;   []
 ;;   (ctl s-rec-synth1 :stop 1)
-;;   (def s-play-synth1 (slave-play [:head play-slave-group] :which-buf 1 ))
+;;   (def s-play-synth1 (loop-play [:head play-slave-group] :which-buf 1 ))
 ;;   )
