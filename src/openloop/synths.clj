@@ -191,7 +191,7 @@
     ;; (out:ar rec-clock-bus rec-clock)
     ))
 
-(defsynth slave-rec
+(defsynth loop-rec
   "record a loop to ram"
   [ rec-clock-bus 42,  in-bus 50, out-bus 70, length-bus 80, which-buf 7, master-clock-bus 44, now-bus 2000, reset-bus 1002]
   (let [
@@ -240,7 +240,7 @@
     ;; (out:ar rec-clock-bus rec-clock)
     ))
 
-;; (show-graphviz-synth slave-rec)
+;; (show-graphviz-synth loop-rec)
 
 (defsynth loop-master-play
   "play back a master loop"

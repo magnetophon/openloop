@@ -105,7 +105,7 @@
   (def master-clock-synth (master-clock [:tail rec-group]))
   (def ram-master-rec-synth (ram-master-rec [:tail rec-group]))
   (def loop-master-play-synth (loop-master-play [:tail play-group]))
-  (def slave-rec-synth (slave-rec [:tail rec-group]))
+  (def loop-rec-synth (loop-rec [:tail rec-group]))
   ;; (def loop-play-synth (loop-play [:tail play-group]))
   ;; (ctl loop-play-synth  :which-buf 7)
   ;; (ctl loop-play-synth  :now-bus 2000)
