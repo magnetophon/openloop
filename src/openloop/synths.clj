@@ -166,7 +166,9 @@
         rec-clock (in:ar rec-clock-bus 1)
         ;; first-start (latch first-recording now)
         ;; master-clock  (wrap:ar (- rec-clock start) 0 length)
-        master-clock (phasor:ar :trig started?  :end length )
+        master-clock (select started?
+                             [(dc:ar -1)
+                              (phasor:ar :trig started?  :end length )])
         ]
     (out:kr length-bus length )
     (out:ar master-clock-bus master-clock )
@@ -197,7 +199,7 @@
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
-        length (in:kr length-bus 1)
+        master-length (in:kr length-bus 1)
         ;; reset (in:kr reset-bus 1)
         ;; rec-clock (in:ar rec-clock-bus 1) ; the disk-clock
         master-clock (in:ar master-clock-bus) ; the master-loop clock
@@ -209,8 +211,12 @@
 
         started? (set-reset-ff:kr wants-start? reset) ; once start is pressed, stays 1 until we delete the loop
 
-        currently-have-length? (not= 0 length) ; is there a master loop at the moment?
-        have-master?  (latch:kr currently-have-length? started?) ; was there a master loop when we pressed start?
+        have-master? (> master-length 0) ; is there a master loop at the moment?
+        ;; currently-have-master-length? (> master-length 0) ; is there a master loop at the moment?
+        ;; have-master?  (latch:kr currently-have-length? started?) ; was there a master loop when we pressed start?
+        ;; have-master?  (select started?
+        ;;                       [0
+        ;;                        currently-have-master-length?]) ; was there a master loop when we pressed start?
         ;; is-recording (set-reset-ff (and wants-recording have-master) reset)
         ;; first-half? (<= master-clock (/ length 2)) ; are we in the first half?
         ;; master-start (latch:ar rec-clock (= 0 master-clock)) ; get a new start val every time the master passes 0
@@ -225,7 +231,8 @@
         ;; reset-rec? (select have-master?
         ;;                    [started?
         ;;                     slave-reset-rec?])
-        reset-rec? started?
+        ;; reset-rec? started?
+        reset-rec? slave-reset-rec?
 
         ;; slave-clock (- rec-clock try-record-start )
         loop-rec-clock (sweep:ar reset-rec? SR)
@@ -235,12 +242,13 @@
         my-in (in:ar in-bus nr-chan)
         ]
     (buf-wr:ar my-in which-buf loop-rec-clock 0 )
-    ;; (send-trig:kr (impulse:kr 1) 66 (a2k actual-start) )
+    (send-trig:kr (impulse:kr 1) 66 (a2k have-master? ) )
     ;; (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
     ;; (out:ar rec-clock-bus rec-clock)
     ))
 
 (show-graphviz-synth loop-rec)
+
 
 (defsynth loop-master-play
   "play back a master loop"
@@ -314,7 +322,7 @@
         started? (set-reset-ff:kr wants-start? delete?) ; once start is pressed, stays 1 until we delete the loop
         stopped? (set-reset-ff:kr wants-stop? delete?) ; once stop is pressed, stays 1 until we delete the loop
 
-        currently-have-length? (not= 0 master-length) ; is there a master loop at the moment?
+        currently-have-length? (> master-length 0) ; is there a master loop at the moment?
         have-master?  (latch:kr currently-have-length? started?) ; was there a master loop when we pressed start?
         ;; have-master? (not= 0 master-length) ; is there a master loop?
 
@@ -393,10 +401,10 @@
                          master-length)
                         start-offset )
                        )
-        new-clock (* stopped? master-clock)
+        new-clock (* stopped? master-clock) ; the clock for playing the master loop
 
         loop-clock (select have-master?
-                           [new-clock
+                           [new-clock ; we are the master, so start playing as soon as we stop recording
                             slave-clock])
         ;; loop-clock new-clock
         ;; 0 loop-length)
@@ -404,9 +412,13 @@
         ;;  (- (phasor:ar (and (= 0 master-clock) (= 0  should-play?)) 1 0  loop-length) start-offset
         ;;  0 loop-length))
         sig (buf-rd:ar nr-chan which-buf loop-clock 0 1)
+        ;; lengths-buffer-index (select:kr stopped?
+        ;;                                 [nr-loops ; if we are not stopped, we don't have a valid length so we write it outside of the buffer. (hope that's safe!! )
+        ;;                                  which-buf]) ;otherwise write it to out buffer
         ]
     ;; (send-trig:kr now-bus 0 now-bus)
     (out:ar out-bus sig)
+    ;; (buf-wr:kr loop-length lengths-buffer lengths-buffer-index 0 )
     ;; (send-trig:kr new-now? 42 (a2k corner-case-length) )
     ;; (send-trig:kr (impulse:kr 1) 42 (a2k prev-sensible-length ) )
     ;; (send-trig:kr (impulse:kr 1) 41 (a2k actual-start ) )

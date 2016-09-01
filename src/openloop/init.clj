@@ -66,6 +66,8 @@
     (def-loop-player i)
     )
 
+  (defonce lengths-buffer (buffer nr-loops 1 lengths-buffer))
+  (buffer-fill! lengths-buffer 0)
   ;; (defonce buffer0 (buffer max-loop-samples nr-chan buffer0))
   ;; (defonce buffer1 (buffer max-loop-samples nr-chan buffer1))
   ;; (defonce buffer2 (buffer max-loop-samples nr-chan buffer2))

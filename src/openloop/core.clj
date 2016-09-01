@@ -47,17 +47,23 @@
 (-main)
 (pp-node-tree)
 (init)
-(ctl (:rec-id (:recorder (:value @fsm-state)))  :trig 1)
 (switch-to-i 0)
+(ctl (:rec-id (:recorder (:value @fsm-state)))  :trig 1)
 (switch-to-i 1)
 (switch-to-i 2)
-(def play1synth (play1 [:tail play-group]))
-(kill play1synth)
-(play7synth)
-(defsynth play1
-  []
+(switch-to-i 3)
+(switch-to-i 4)
+(switch-to-i 5)
+(switch-to-i 6)
+(switch-to-i 7)
+(ctl loop-rec-synth   :reset 1)
+(ctl play-synth3   :reset 1)
+(def play-i-synth (play-i [:tail play-group] 0))
+(kill play-i-synth)
+(defsynth play-i
+  [i 0]
 
-  (out:ar 70 (buf-rd:ar nr-chan 1 (phasor:ar :trig 1 :end max-phasor-val ) 0 1))
+  (out:ar 70 (buf-rd:ar nr-chan i (phasor:ar :trig 1 :end max-phasor-val ) 0 1))
   )
 @(get-in master-clock-synth [:taps :length ])
 @(get-in loop-master-play-synth [:taps :clock ])
