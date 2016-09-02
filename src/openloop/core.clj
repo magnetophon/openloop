@@ -24,38 +24,64 @@
   (init)
   )
 
+(defn int-to-play-synth
+  "convert a number into a play-synth name"
+  [i]
+  (eval (symbol (str "play-synth" i)))
+  )
+
+
 (defn switch-to-i
   "switch the current loop"
   [i]
-  (let [player (str "play-synth" i) ]
+  (let [player (int-to-play-synth i) ]
 
 
     ;; (ctl loop-master-play-synth  :now-bus 2000)
     ;; (ctl master-clock-synth  :now-bus 2000)
     (ctl loop-rec-synth   :which-buf (eval i))
     (ctl loop-rec-synth   :reset 1)
-    (ctl (eval (symbol player))  :which-buf (eval i))
-    (ctl (eval (symbol player))  :now-bus 1001)
+    (ctl player :which-buf (eval i))
+
+    (dotimes [j nr-loops]
+      (ctl  (int-to-play-synth j)  :replace 0))
+
+    (ctl player :now-bus 1001)
     ;; (ctl play-synth1  :now-bus 1001)
     ;; (ctl slave-rec-synth  :which-buf 1)
     ))
 
+(switch-to-i 0)
 
 (defn reset-i
   "clear a loop"
   [i]
-  (let [player (str "play-synth" i) ]
+  (let [player (int-to-play-synth i) ]
     (clearbuf i)
     (switch-to-i i)
-    (ctl (eval (symbol player)) :reset 1)
+    (ctl player :reset 1)
+    (ctl player :replace 0)
     ))
 
-(ctl play-synth0  :reset 1)
+(defn replace-mode-i
+  "put the loop in replace mode"
+  [i rep]
+  (let [player (int-to-play-synth i) ]
+    (ctl player  :replace rep)
+    (dotimes [j nr-loops]
+      (when-not (= i j)
+        (ctl  (int-to-play-synth j)  :replace (= 0 rep)))
+      )
+    ))
+
+
 
 (on-event "/tr" #(println "event: " % (msg2int %)) ::index-synth)
 (remove-event-handler ::index-synth)
 
-(reset-i 0)
+(reset-i 1)
+(replace-mode-i 4 1)
+
 (-main)
 (pp-node-tree)
 (init)

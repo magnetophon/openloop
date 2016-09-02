@@ -236,7 +236,7 @@
 
 (defsynth loop-play
   "play back a slave loop"
-  [ in-bus 50, out-bus 70, length-bus 80, which-buf 0, rec-clock-bus 42, master-clock-bus 44, now-bus 2000, reset-bus 1002, reset [0 :tr]]
+  [ in-bus 50, out-bus 70, length-bus 80, which-buf 0, rec-clock-bus 42, master-clock-bus 44, now-bus 2000, reset-bus 1002, reset [0 :tr], replace 0]
   (let [
 
         ;; **************************************************************************************
@@ -354,13 +354,22 @@
         ;; (wrap:ar
         ;;  (- (phasor:ar (and (= 0 master-clock) (= 0  should-play?)) 1 0  loop-length) start-offset
         ;;  0 loop-length))
-        sig (buf-rd:ar nr-chan which-buf loop-clock 0 1)
+
+        replacing? (and replace wants-recording)
+
+        sig (* (buf-rd:ar nr-chan which-buf loop-clock 0 1) (= 0 replacing?))
+
+        my-in (in:ar in-bus nr-chan)
+        write-index (select replacing?
+                            [(dc:ar (+ max-loop-length 1))
+                             loop-clock]) ; if not replacing, write outside of loop
         ;; lengths-buffer-index (select:kr stopped?
         ;;                                 [nr-loops ; if we are not stopped, we don't have a valid length so we write it outside of the buffer. (hope that's safe!! )
         ;;                                  which-buf]) ;otherwise write it to out buffer
         ]
     ;; (send-trig:kr now-bus 0 now-bus)
     (out:ar out-bus sig)
+    (buf-wr my-in which-buf write-index 0 )
     ;; (send-trig:kr (impulse:kr 1) 66 (a2k fraction ) )
     ;; (buf-wr:kr loop-length lengths-buffer lengths-buffer-index 0 )
     ;; (send-trig:kr new-now? 42 (a2k corner-case-length) )

@@ -38,7 +38,7 @@
   "create a loop player"
   [i]
   (let
-      [name (str "play-synth" i)
+      [name (int-to-play-synth i)
        ]
     (eval `(def ~(symbol name) (loop-play  [:tail play-group ] :which-buf ~(int i ))))
     ))
