@@ -50,6 +50,7 @@
     ;; (def test (+ (* 0.5 (decay downbeat 0.1) (sin-osc 880)) sig))
     (out:ar out-bus sig)))
 
+
 (defsynth old-slave-play
   "play back a slave loop"
   [rate 1 jump [0 :tr] length-mul 1 which-buf 0 del 0 atk-thres 0.002 amp 1 nr-bars-bus 100 downbeat-bus 90 length-bus 80 out-bus 70]
@@ -177,29 +178,13 @@
 
 ;; (show-graphviz-synth master-clock)
 
-
-(defsynth ram-master-rec
-  "record a loop to ram"
-  [ in-bus 50, out-bus 70, which-buf 0, master-clock-bus 44, now-bus 1001, reset-bus 1002]
-  (let [
-        now (in:kr now-bus 1)
-        new-now? (not= 0 now)
-        reset (in:kr reset-bus 1)
-        is-recording (set-reset-ff:kr new-now? reset)
-        ;; is-recording        (tap :my-tap 5 is-recording)
-        my-in (in:ar in-bus nr-chan)
-        ]
-    (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
-    ;; (out:ar rec-clock-bus rec-clock)
-    ))
-
 (defsynth loop-rec
   "record a loop to ram"
   [ rec-clock-bus 42,  in-bus 50, out-bus 70, length-bus 80, which-buf 0, master-clock-bus 44, now-bus 1001, reset [0 :tr]]
   (let [
         now (in:kr now-bus 1)
         new-now? (not= 0 now)
-        master-length (in:kr length-bus 1)
+        ;; master-length (in:kr length-bus 1)
         ;; reset (in:kr reset-bus 1)
         ;; rec-clock (in:ar rec-clock-bus 1) ; the disk-clock
         master-clock (in:ar master-clock-bus) ; the master-loop clock
@@ -211,7 +196,7 @@
 
         started? (set-reset-ff:kr wants-start? reset) ; once start is pressed, stays 1 until we delete the loop
 
-        have-master? (> master-length 0) ; is there a master loop at the moment?
+        ;; have-master? (> master-length 0) ; is there a master loop at the moment?
         ;; currently-have-master-length? (> master-length 0) ; is there a master loop at the moment?
         ;; have-master?  (latch:kr currently-have-length? started?) ; was there a master loop when we pressed start?
         ;; have-master?  (select started?
@@ -226,13 +211,12 @@
         ;;                          [master-start
         ;;                           actual-start])
 
-        slave-reset-rec? (and (= 0 master-clock) (= 0 started?))
+        reset-rec? (and (= 0 master-clock) (= 0 started?))
 
         ;; reset-rec? (select have-master?
         ;;                    [started?
         ;;                     slave-reset-rec?])
         ;; reset-rec? started?
-        reset-rec? slave-reset-rec?
 
         ;; slave-clock (- rec-clock try-record-start )
         loop-rec-clock (sweep:ar reset-rec? SR)
@@ -242,59 +226,17 @@
         my-in (in:ar in-bus nr-chan)
         ]
     (buf-wr:ar my-in which-buf loop-rec-clock 0 )
-    (send-trig:kr (impulse:kr 1) 66 (a2k have-master? ) )
+    ;; (send-trig:kr (impulse:kr 1) 66 (a2k started? ) )
     ;; (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
     ;; (out:ar rec-clock-bus rec-clock)
     ))
 
-(show-graphviz-synth loop-rec)
+;; (show-graphviz-synth loop-rec)
 
-
-(defsynth loop-master-play
-  "play back a master loop"
-  [ in-bus 50, out-bus 70, which-buf 0, rec-clock-bus 42, master-clock-bus 44, now-bus 1001, reset-bus 1002]
-  (let [
-        now (in:kr now-bus 1)
-        master-clock (in:ar master-clock-bus) ; the master-loop clock
-        reset (in:kr reset-bus 1)
-        new-now? (not= 0 now)
-        is-recording (toggle-ff:kr new-now?)
-        ;; is-recording        (tap :my-tap 5 is-recording)
-        ;; start? (and new-now? (= is-recording 1))
-        stop? (and new-now? (= is-recording 0))
-        ;; started? (set-reset-ff:kr start? reset) ; once start is pressed, stays 1 until we delete the loop
-        stopped? (set-reset-ff:kr stop? reset) ; once stop is pressed, stays 1 until we delete the loop
-        ;; start (latch:kr now started? )
-        ;; stop (latch:kr now stopped? )
-        ;; length (max (- stop start) 0 )
-        ;; tapperl (tap :length 5 (a2k length ) )
-        ;; master-clock (phasor:ar :trig stop? :rate 1 :end max-phasor-val )
-        ;; rec-clock (in:ar rec-clock-bus 1)
-        loop-clock (* stopped? master-clock)
-        ;; loop-clock (* stopped? (wrap:ar (- rec-clock start) 0 length))
-        ;; loop-clock (* (= is-recording 0) (wrap:ar (- rec-clock start) 0 length))
-        ;; loop-clock (* (= is-recording 0) (wrap:ar master-clock 0 length))
-        ;; tapper (tap :clock 5 (a2k loop-clock) )
-        ;; loop-clock (* (= is-recording 0) (wrap:ar (- master-clock start) 0 length))
-        ;; my-in (in:ar in-bus nr-chan)
-        ;; buf (record-buf:ar my-in which-buf 0 1 0 is-recording 0)
-        ;; buf (disk-load start length)
-        sig (buf-rd:ar nr-chan which-buf loop-clock 0 1)
-        ;; send? (> 10 (a2k loop-clock) 12)
-        ;; send? (impulse:kr 1)
-        ]
-    ;; (send-trig:kr now-bus 0 now-bus)
-    ;; (send-trig:kr send? 42 (a2k loop-clock) )
-    (out:ar out-bus sig)
-    ))
-
-;; (show-graphviz-synth loop-master-play)
-
-(gate)
 
 (defsynth loop-play
   "play back a slave loop"
-  [ in-bus 50, out-bus 70, length-bus 80, which-buf 0, rec-clock-bus 42, master-clock-bus 44, now-bus 2000, reset-bus 1002]
+  [ in-bus 50, out-bus 70, length-bus 80, which-buf 0, rec-clock-bus 42, master-clock-bus 44, now-bus 2000, reset-bus 1002, reset [0 :tr]]
   (let [
 
         ;; **************************************************************************************
@@ -305,7 +247,8 @@
         rec-clock (in:ar rec-clock-bus 1) ; disk recording clock
         master-clock (in:ar master-clock-bus) ; the master-loop clock
         master-length (in:kr length-bus 1) ; length of the master loop in samples
-        delete? (in:kr reset-bus 1); do we want to delete the loop?
+        ;; delete? (in:kr reset-bus 1); do we want to delete the loop?
+        delete? reset; do we want to delete the loop?
 
         ;; **************************************************************************************
         ;; intermediate values
@@ -418,6 +361,7 @@
         ]
     ;; (send-trig:kr now-bus 0 now-bus)
     (out:ar out-bus sig)
+    ;; (send-trig:kr (impulse:kr 1) 66 (a2k fraction ) )
     ;; (buf-wr:kr loop-length lengths-buffer lengths-buffer-index 0 )
     ;; (send-trig:kr new-now? 42 (a2k corner-case-length) )
     ;; (send-trig:kr (impulse:kr 1) 42 (a2k prev-sensible-length ) )
@@ -425,7 +369,7 @@
 
     ))
 
-;; (show-graphviz-synth loop-slave-play)
+;; (show-graphviz-synth loop-play)
 
 (defsynth disk-play
   "play back a slave loop"

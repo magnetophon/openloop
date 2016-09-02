@@ -25,6 +25,7 @@
   )
 
 (defn switch-to-i
+  "switch the current loop"
   [i]
   (let [player (str "play-synth" i) ]
 
@@ -39,11 +40,22 @@
     ;; (ctl slave-rec-synth  :which-buf 1)
     ))
 
-(ctl play-synth0  :now-bus 2000)
+
+(defn reset-i
+  "clear a loop"
+  [i]
+  (let [player (str "play-synth" i) ]
+    (clearbuf i)
+    (switch-to-i i)
+    (ctl (eval (symbol player)) :reset 1)
+    ))
+
+(ctl play-synth0  :reset 1)
 
 (on-event "/tr" #(println "event: " % (msg2int %)) ::index-synth)
 (remove-event-handler ::index-synth)
 
+(reset-i 0)
 (-main)
 (pp-node-tree)
 (init)
