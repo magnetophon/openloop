@@ -40,7 +40,8 @@
   (let
       [name (int-to-play-synth i)
        ]
-    (eval `(def ~(symbol name) (loop-play  [:tail play-group ] :which-buf ~(int i ))))
+                                        ;loop-; (eval `(def ~(symbol name) (loop-play  [:tail play-group ] :which-buf ~(int i ))))
+    (eval `(def ~(symbol (str name)) (loop-play  [:tail play-group ] :which-buf ~(int i ))))
     ))
 
 
@@ -68,6 +69,11 @@
 
   (defonce lengths-buffer (buffer nr-loops 1 lengths-buffer))
   (buffer-fill! lengths-buffer 0)
+  (defonce modes-buffer (buffer nr-loops 1 modes-buffer))
+  (buffer-fill! modes-buffer 0)
+  (defonce active-loop-buffer (buffer 1 1 active-loop-buffer ))
+  (buffer-fill! active-loop-buffer 0)
+  ;; (defonce buffer0 (buffer max-loop-samples nr-chan buffer0))
   ;; (defonce buffer0 (buffer max-loop-samples nr-chan buffer0))
   ;; (defonce buffer1 (buffer max-loop-samples nr-chan buffer1))
   ;; (defonce buffer2 (buffer max-loop-samples nr-chan buffer2))
@@ -107,7 +113,8 @@
   (def master-clock-synth (master-clock [:tail rec-group]))
   ;; (def ram-master-rec-synth (ram-master-rec [:tail rec-group]))
   ;; (def loop-master-play-synth (loop-master-play [:tail play-group]))
-  (def loop-rec-synth (loop-rec [:tail rec-group]))
+  ;; (def loop-rec-synth (loop-rec [:tail rec-group]))
+  (def command-handler-synth (command-handler [:tail rec-group]))
   ;; (def loop-play-synth (loop-play [:tail play-group]))
   ;; (ctl loop-play-synth  :which-buf 7)
   (def out-synth (output [:head out-group]))

@@ -27,26 +27,28 @@
 (defn int-to-play-synth
   "convert a number into a play-synth name"
   [i]
-  (eval (symbol (str "play-synth" i)))
+  ;; (eval (symbol (str "play-synth" i)))
+  (symbol (str "play-synth" i))
   )
 
 
 (defn switch-to-i
   "switch the current loop"
   [i]
-  (let [player (int-to-play-synth i) ]
+  (let [player (eval (int-to-play-synth i)) ]
 
 
     ;; (ctl loop-master-play-synth  :now-bus 2000)
     ;; (ctl master-clock-synth  :now-bus 2000)
-    (ctl loop-rec-synth   :which-buf (eval i))
-    (ctl loop-rec-synth   :reset 1)
-    (ctl player :which-buf (eval i))
+    ;; (ctl loop-rec-synth   :which-buf (eval i))
+    ;; (ctl loop-rec-synth   :reset 1)
+    ;; (ctl player :which-buf (eval i))
 
-    (dotimes [j nr-loops]
-      (ctl  (int-to-play-synth j)  :replace 0))
+    ;; (dotimes [j nr-loops]
+    ;;   (ctl  (int-to-play-synth j)  :replace 0))
 
     (ctl player :now-bus 1001)
+    (ctl command-handler-synth :loop-nr i)
     ;; (ctl play-synth1  :now-bus 1001)
     ;; (ctl slave-rec-synth  :which-buf 1)
     ))
@@ -74,19 +76,22 @@
       )
     ))
 
+;; (ctl play-synth0 :now-bus 1001)
 
 
 (on-event "/tr" #(println "event: " % (msg2int %)) ::index-synth)
 (remove-event-handler ::index-synth)
 
+(def-loop-player 0)
+
 (reset-i 1)
 (replace-mode-i 4 1)
-
 (-main)
 (pp-node-tree)
 (init)
 (switch-to-i 0)
 (ctl (:rec-id (:recorder (:value @fsm-state)))  :trig 1)
+(ctl command-handler-synth  :mode 1)
 (switch-to-i 1)
 (switch-to-i 2)
 (switch-to-i 3)

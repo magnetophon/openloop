@@ -137,7 +137,68 @@
   (def buf (load-sample "/tmp/openloop.wav" :start start :size length))
   )
 
-;; (disk-load 100 1000)
+;; modes:
+;; 0 stop
+;; 1 rec
+;; 2 play
+;; 3 replace  : reeplace the audio @ playhead, wrap around when at the end
+;; 4 replace-extend : replace, but when @ the end of the loop, extend it.
+;; 5 extend after : start recording when we reach the end of the loop
+;; 6 double : souble the length of the loop by copying it
+;; 7 cut-mode: toggle the volume
+
+(defn get-mode
+  "get the mode of loop i"
+  [i]
+  ;; (buffer-get modes-buffer i)
+  (buf-rd:kr 1 modes-buffer i 0 1)
+  )
+
+(defn get-active-loop
+  "get the number of the currently active loop"
+  []
+  (buffer-get active-loop-buffer 0))
+
+(defsynth command-handler
+  "receive keyboard, midi, or osc events and turn them into commands for the loopers"
+  [mode 0 loop-nr (+ 1 nr-loops)]
+  (let [
+        prev-active-loop (get-active-loop)
+        prev-mode-of-prev-loop (get-mode prev-active-loop)
+        new-loop? (not= loop-nr prev-active-loop)
+        new-mode? (not= mode prev-mode-of-prev-loop)
+        needs-transition? (and new-loop?
+                               new-mode?
+                               (not= 0 prev-mode-of-prev-loop)
+                               (not= 2 prev-mode-of-prev-loop)
+                               (not= 7 prev-mode-of-prev-loop))
+        transition-mode (select:kr
+                         needs-transition?
+                         [ prev-mode-of-prev-loop
+                          2
+                          ])
+        prev-command-bus (+ prev-active-loop command-bus-base )
+        command-bus (+ loop-nr command-bus-base)
+
+
+        ]
+
+    (out:kr prev-command-bus transition-mode)
+    (out:kr command-bus mode)
+    (buf-wr:kr loop-nr active-loop-buffer 0 0)
+    (buf-wr:kr mode modes-buffer loop-nr 0 )
+
+    ;; [mode 0 loop-nr [0 :tr]]
+    ;; (out:kr mode-bus mode)
+    (out:kr loop-nr-bus loop-nr)
+    (send-trig:kr (impulse:kr 1) 6 (a2k mode ) )
+    ;; (send-trig:kr (impulse:kr 1) 666 (a2k loop-nr ) )
+    ))
+
+(show-graphviz-synth command-handler)
+
+
+
 (defsynth master-clock
   "if we have no loops running, define the new master length"
   [length-bus 80, rec-clock-bus 42  master-clock-bus 44, now-bus 1001, reset-bus 1002]
@@ -213,12 +274,6 @@
 
         reset-rec? (and (= 0 master-clock) (= 0 started?))
 
-        ;; reset-rec? (select have-master?
-        ;;                    [started?
-        ;;                     slave-reset-rec?])
-        ;; reset-rec? started?
-
-        ;; slave-clock (- rec-clock try-record-start )
         loop-rec-clock (sweep:ar reset-rec? SR)
 
 
@@ -236,23 +291,30 @@
 
 (defsynth loop-play
   "play back a slave loop"
-  [ in-bus 50, out-bus 70, length-bus 80, which-buf 0, rec-clock-bus 42, master-clock-bus 44, now-bus 2000, reset-bus 1002, reset [0 :tr], replace 0]
+  [ in-bus 50, out-bus 70, length-bus 80, rec-clock-bus 42, master-clock-bus 44, now-bus 2000, reset-bus 1002, which-buf 0, reset [0 :tr]]
   (let [
 
         ;; **************************************************************************************
         ;; input busses
         ;; **************************************************************************************
 
-        now (in:kr now-bus 1) ; gives the rec-clock time when we hit start/stop
-        rec-clock (in:ar rec-clock-bus 1) ; disk recording clock
+        now (in:kr now-bus) ; gives the rec-clock time when we hit start/stop
+        rec-clock (in:ar rec-clock-bus) ; disk recording clock
         master-clock (in:ar master-clock-bus) ; the master-loop clock
-        master-length (in:kr length-bus 1) ; length of the master loop in samples
+        master-length (in:kr length-bus) ; length of the master loop in samples
         ;; delete? (in:kr reset-bus 1); do we want to delete the loop?
         delete? reset; do we want to delete the loop?
+        wants-mode (in:kr mode-bus)
+        loop-nr (in:kr loop-nr-bus)
+        ;; which-buf loop-nr
 
         ;; **************************************************************************************
         ;; intermediate values
         ;; **************************************************************************************
+
+        new-mode? (= which-buf loop-nr)
+
+        mode (latch:kr new-mode? wants-mode)
 
 
 
@@ -355,14 +417,47 @@
         ;;  (- (phasor:ar (and (= 0 master-clock) (= 0  should-play?)) 1 0  loop-length) start-offset
         ;;  0 loop-length))
 
-        replacing? (and replace wants-recording)
+        ;; replacing? (and replace wants-recording)
 
-        sig (* (buf-rd:ar nr-chan which-buf loop-clock 0 1) (= 0 replacing?))
+        loop-on (or (= 2 mode) (and (= 3 mode) (= 0 wants-recording)))  ; only actually play the loop when we are either in play mode, or we are in replace mode, but not recording.
+
+        sig (* (buf-rd:ar nr-chan which-buf loop-clock 0 1) loop-on)
+
+
+        ;; **************************************************************************************
+        ;; recording
+        ;; **************************************************************************************
+
 
         my-in (in:ar in-bus nr-chan)
-        write-index (select replacing?
-                            [(dc:ar (+ max-loop-length 1))
-                             loop-clock]) ; if not replacing, write outside of loop
+
+        reset-rec? (and (= 0 master-clock) (= 0 started?))
+
+
+        ;; modes:
+        ;; 0 stop
+        ;; 1 rec
+        ;; 2 play
+        ;; 3 replace  : reeplace the audio @ playhead, wrap around when at the end
+        ;; 4 replace-extend : replace, but when @ the end of the loop, extend it.
+        ;; 5 extend after : start recording when we reach the end of the loop
+        ;; 6 double : souble the length of the loop by copying it
+        ;; 7 cut-mode: toggle the volume
+
+        stop-index (dc:ar (+ max-loop-length 1)) ; when stopped, write after the loop: iow don't write.
+        rec-index (sweep:ar reset-rec? SR)
+        replace-index (select wants-recording
+                              [stop-index
+                               loop-clock])
+
+
+        write-index (select:ar mode
+                               [
+                                stop-index
+                                rec-index
+                                stop-index
+                                loop-clock
+                                ])
         ;; lengths-buffer-index (select:kr stopped?
         ;;                                 [nr-loops ; if we are not stopped, we don't have a valid length so we write it outside of the buffer. (hope that's safe!! )
         ;;                                  which-buf]) ;otherwise write it to out buffer
@@ -370,7 +465,8 @@
     ;; (send-trig:kr now-bus 0 now-bus)
     (out:ar out-bus sig)
     (buf-wr my-in which-buf write-index 0 )
-    ;; (send-trig:kr (impulse:kr 1) 66 (a2k fraction ) )
+    (send-trig:kr (impulse:kr 1) 66 (a2k mode ) )
+    ;; (send-trig:kr (impulse:kr 1) 666 (a2k wants-mode ) )
     ;; (buf-wr:kr loop-length lengths-buffer lengths-buffer-index 0 )
     ;; (send-trig:kr new-now? 42 (a2k corner-case-length) )
     ;; (send-trig:kr (impulse:kr 1) 42 (a2k prev-sensible-length ) )
@@ -378,7 +474,7 @@
 
     ))
 
-;; (show-graphviz-synth loop-play)
+(show-graphviz-synth loop-play)
 
 (defsynth disk-play
   "play back a slave loop"
