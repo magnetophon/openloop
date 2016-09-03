@@ -58,7 +58,7 @@
 (defn reset-i
   "clear a loop"
   [i]
-  (let [player (int-to-play-synth i) ]
+  (let [player (eval (int-to-play-synth i)) ]
     (clearbuf i)
     (switch-to-i i)
     (ctl player :reset 1)
@@ -91,7 +91,10 @@
 (init)
 (switch-to-i 0)
 (ctl (:rec-id (:recorder (:value @fsm-state)))  :trig 1)
+(ctl command-handler-synth  :mode 0)
 (ctl command-handler-synth  :mode 1)
+(ctl command-handler-synth  :mode 2)
+(ctl command-handler-synth  :mode 3)
 (switch-to-i 1)
 (switch-to-i 2)
 (switch-to-i 3)

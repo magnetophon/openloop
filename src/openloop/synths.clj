@@ -177,14 +177,14 @@
                          [ prev-mode-of-prev-loop
                           2
                           ])
-        prev-command-bus (+ prev-active-loop command-bus-base )
-        command-bus (+ loop-nr command-bus-base)
+        prev-mode-bus (+ prev-active-loop mode-bus-base )
+        mode-bus (+ loop-nr mode-bus-base)
 
 
         ]
 
-    (out:kr prev-command-bus transition-mode)
-    (out:kr command-bus mode)
+    (out:kr prev-mode-bus transition-mode)
+    (out:kr mode-bus mode)
     (buf-wr:kr loop-nr active-loop-buffer 0 0)
     (buf-wr:kr mode modes-buffer loop-nr 0 )
 
@@ -304,7 +304,9 @@
         master-length (in:kr length-bus) ; length of the master loop in samples
         ;; delete? (in:kr reset-bus 1); do we want to delete the loop?
         delete? reset; do we want to delete the loop?
-        wants-mode (in:kr mode-bus)
+        ;; wants-mode (in:kr mode-bus)
+        mode-bus (+ which-buf mode-bus-base)
+        mode (in:kr mode-bus)
         loop-nr (in:kr loop-nr-bus)
         ;; which-buf loop-nr
 
@@ -312,9 +314,9 @@
         ;; intermediate values
         ;; **************************************************************************************
 
-        new-mode? (= which-buf loop-nr)
+        ;; new-mode? (= which-buf loop-nr)
 
-        mode (latch:kr new-mode? wants-mode)
+        ;; mode (latch:kr new-mode? wants-mode)
 
 
 
@@ -456,7 +458,7 @@
                                 stop-index
                                 rec-index
                                 stop-index
-                                loop-clock
+                                replace-index
                                 ])
         ;; lengths-buffer-index (select:kr stopped?
         ;;                                 [nr-loops ; if we are not stopped, we don't have a valid length so we write it outside of the buffer. (hope that's safe!! )

@@ -26,6 +26,6 @@
 ;; a phasor cannot get a higher value than this:  2^31
 ;; it translates to more than 13 hours, so should be fine.
 (def max-phasor-val 2147483648)
-(def mode-bus 1007)
+;; (def mode-bus 1007)
 (def loop-nr-bus 1008)
-(def command-bus-base 500)
+(def mode-bus-base 500)
