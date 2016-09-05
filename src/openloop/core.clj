@@ -23,14 +23,7 @@
   (boot)
   (init)
   )
-
-(defn int-to-play-synth
-  "convert a number into a play-synth name"
-  [i]
-  ;; (eval (symbol (str "play-synth" i)))
-  (symbol (str "play-synth" i))
-  )
-
+;; (ctl play-synth0 :now-bus 1001)
 
 (defn switch-to-i
   "switch the current loop"
@@ -47,13 +40,11 @@
     ;; (dotimes [j nr-loops]
     ;;   (ctl  (int-to-play-synth j)  :replace 0))
 
-    (ctl player :now-bus 1001)
+    ;; (ctl player :now-bus 1001)
     (ctl command-handler-synth :loop-nr i)
     ;; (ctl play-synth1  :now-bus 1001)
     ;; (ctl slave-rec-synth  :which-buf 1)
     ))
-
-(switch-to-i 0)
 
 (defn reset-i
   "clear a loop"
@@ -75,8 +66,7 @@
         (ctl  (int-to-play-synth j)  :replace (= 0 rep)))
       )
     ))
-
-;; (ctl play-synth0 :now-bus 1001)
+(switch-to-i 0)
 
 
 (on-event "/tr" #(println "event: " % (msg2int %)) ::index-synth)
@@ -84,17 +74,20 @@
 
 (def-loop-player 0)
 
+(buffer-fill! modes-buffer 0 nr-loops 0)
 (reset-i 1)
 (replace-mode-i 4 1)
+
 (-main)
 (pp-node-tree)
 (init)
 (switch-to-i 0)
-(ctl (:rec-id (:recorder (:value @fsm-state)))  :trig 1)
-(ctl command-handler-synth  :mode 0)
+(ctl command-handler-synth  :trig 1)
+;; (ctl (:rec-id (:recorder (:value @fsm-state)))  :trig 1)
 (ctl command-handler-synth  :mode 1)
 (ctl command-handler-synth  :mode 2)
 (ctl command-handler-synth  :mode 3)
+(ctl command-handler-synth  :mode 0)
 (switch-to-i 1)
 (switch-to-i 2)
 (switch-to-i 3)
@@ -108,8 +101,7 @@
 (kill play-i-synth)
 (defsynth play-i
   [i 0]
-
-  (out:ar 70 (buf-rd:ar nr-chan i (phasor:ar :trig 1 :end max-phasor-val ) 0 1))
+  (out:ar 70 (buf-rd:ar nr-chan i (sweep:ar 1 SR) 0 1))
   )
 @(get-in master-clock-synth [:taps :length ])
 @(get-in loop-master-play-synth [:taps :clock ])
@@ -147,7 +139,7 @@
 
         ;; count (stepper:ar trigger :min 0 :max 3.3554432E7 :step 2)
         ;; count (phasor:ar trigger :min 0 :max (* SR 60 60) :step 2)
-        count (phasor:ar :trig 1 :rate 1 :end max-phasor-val )
+        count (sweep:ar 1 SR)
         ]
     (send-trig:kr slowtrigger 0 (a2k count))
     ))

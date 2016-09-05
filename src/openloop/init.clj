@@ -42,6 +42,7 @@
        ]
                                         ;loop-; (eval `(def ~(symbol name) (loop-play  [:tail play-group ] :which-buf ~(int i ))))
     (eval `(def ~(symbol (str name)) (loop-play  [:tail play-group ] :which-buf ~(int i ))))
+    ;; (eval `(def ~(symbol (str name)) (loop-play  [:tail play-group ] :which-buf ~(int (+ i 16) ))))
     ))
 
 
@@ -69,54 +70,10 @@
 
   (defonce lengths-buffer (buffer nr-loops 1 lengths-buffer))
   (buffer-fill! lengths-buffer 0)
-  (defonce modes-buffer (buffer nr-loops 1 modes-buffer))
-  (buffer-fill! modes-buffer 0)
-  (defonce active-loop-buffer (buffer 1 1 active-loop-buffer ))
-  (buffer-fill! active-loop-buffer 0)
-  ;; (defonce buffer0 (buffer max-loop-samples nr-chan buffer0))
-  ;; (defonce buffer0 (buffer max-loop-samples nr-chan buffer0))
-  ;; (defonce buffer1 (buffer max-loop-samples nr-chan buffer1))
-  ;; (defonce buffer2 (buffer max-loop-samples nr-chan buffer2))
-  ;; (defonce buffer3 (buffer max-loop-samples nr-chan buffer3))
-  ;; (defonce buffer4 (buffer max-loop-samples nr-chan buffer4))
-  ;; (defonce buffer5 (buffer max-loop-samples nr-chan buffer5))
-  ;; (defonce buffer6 (buffer max-loop-samples nr-chan buffer6))
-  ;; (defonce buffer7 (buffer max-loop-samples nr-chan buffer7))
-
-  ;; (buffer-fill! buffer0 0)
-  ;; ;; hack around index-in-between xruns:
-  ;; ;; (buffer-set! buffer0 0 0.003)
-  ;; (buffer-fill! buffer1 0)
-  ;; (buffer-fill! buffer2 0)
-  ;; (buffer-fill! buffer3 0)
-  ;; (buffer-fill! buffer4 0)
-  ;; (buffer-fill! buffer5 0)
-  ;; (buffer-fill! buffer6 0)
-  ;; (buffer-fill! buffer7 0)
-
-  ;;***********************************************************************************************
-  ;; bus numbers
-  ;;***********************************************************************************************
-
-  (defonce dry-bus (audio-bus nr-chan))
-  (defonce out-bus (audio-bus nr-chan))
-  (defonce rec-clock-bus (audio-bus))
-  (defonce short-clock-bus (audio-bus))
-  (defonce long-clock-bus (audio-bus))
-  ;; (dotimes)
-  ;; (repeatedly nr-loops defbuf)
-  ;; (doall)
-
 
   (def in-synth (input [:head in-group]))
   (disk-recording-start rec-group "/tmp/openloop.wav" :n-chans nr-chan :samples "float")
-  (def master-clock-synth (master-clock [:tail rec-group]))
-  ;; (def ram-master-rec-synth (ram-master-rec [:tail rec-group]))
-  ;; (def loop-master-play-synth (loop-master-play [:tail play-group]))
-  ;; (def loop-rec-synth (loop-rec [:tail rec-group]))
   (def command-handler-synth (command-handler [:tail rec-group]))
-  ;; (def loop-play-synth (loop-play [:tail play-group]))
-  ;; (ctl loop-play-synth  :which-buf 7)
   (def out-synth (output [:head out-group]))
   ;; (def m-rec-synth (master-rec [:head rec-group]))
   ;; (def s-rec-synth1 (slave-rec [:tail rec-group] :which-buf 1 ))
@@ -125,6 +82,8 @@
   ;; see above
   ;; (def m-play-synth (master-play [:head play-master-group]))
   ;; (pp-node-tree)
+
+
   )
 
 ;;   (defonce ^:private silent-buffer (buffer 0))

@@ -25,7 +25,23 @@
 ;; the maximum value of the recording phasor
 ;; a phasor cannot get a higher value than this:  2^31
 ;; it translates to more than 13 hours, so should be fine.
-(def max-phasor-val 2147483648)
+;; (def max-phasor-val 2147483648)
 ;; (def mode-bus 1007)
-(def loop-nr-bus 1008)
-(def mode-bus-base 500)
+;;***********************************************************************************************
+;; bus numbers
+;;***********************************************************************************************
+(defonce in-bus 50)
+(defonce dir-bus 60)
+(defonce rec-bus 70)
+;; (defonce loop-nr-bus 1008)
+(defonce rec-clock-bus 42)
+(defonce short-length-bus 43)
+(defonce short-clock-bus 44)
+(defonce bus-base 500)
+(defonce mode-bus-base bus-base)
+(defonce now-bus-base (+ nr-loops mode-bus-base))
+
+;; (defonce dry-bus (audio-bus nr-chan))
+;; (defonce out-bus (audio-bus nr-chan))
+(defonce short-clock-bus (audio-bus))
+(defonce long-clock-bus (audio-bus))
