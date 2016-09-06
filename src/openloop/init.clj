@@ -42,6 +42,8 @@
   (symbol (str "play-synth" i))
   )
 
+(declare command-handler-synth)
+
 (defn switch-to-i
   "switch the current loop"
   [i]
@@ -137,11 +139,11 @@
   ;; bus numbers
   ;;***********************************************************************************************
 
-  (defonce dry-bus (audio-bus nr-chan))
-  (defonce out-bus (audio-bus nr-chan))
-  (defonce rec-clock-bus (audio-bus))
-  (defonce short-clock-bus (audio-bus))
-  (defonce long-clock-bus (audio-bus))
+  ;; (defonce dry-bus (audio-bus nr-chan))
+  ;; (defonce out-bus (audio-bus nr-chan))
+  ;; (defonce rec-clock-bus (audio-bus))
+  ;; (defonce short-clock-bus (audio-bus))
+  ;; (defonce long-clock-bus (audio-bus))
   ;; (dotimes)
   ;; (repeatedly nr-loops defbuf)
   ;; (doall)
