@@ -24,38 +24,7 @@
   (init)
   )
 
-(defn switch-to-i
-  "switch the current loop"
-  [i]
-  (let [player (eval (int-to-play-synth i)) ]
-
-
-    ;; (ctl loop-master-play-synth  :now-bus 2000)
-    ;; (ctl master-clock-synth  :now-bus 2000)
-    ;; (ctl loop-rec-synth   :which-buf (eval i))
-    ;; (ctl loop-rec-synth   :reset 1)
-    ;; (ctl player :which-buf (eval i))
-
-    ;; (dotimes [j nr-loops]
-    ;;   (ctl  (int-to-play-synth j)  :replace 0))
-
-    (ctl player :now-bus 1001)
-    (ctl command-handler-synth :loop-nr i)
-    ;; (ctl play-synth1  :now-bus 1001)
-    ;; (ctl slave-rec-synth  :which-buf 1)
-    ))
-
 (switch-to-i 0)
-
-(defn reset-i
-  "clear a loop"
-  [i]
-  (let [player (eval (int-to-play-synth i)) ]
-    (clearbuf i)
-    (switch-to-i i)
-    (ctl player :reset 1)
-    (ctl player :replace 0)
-    ))
 
 (defn replace-mode-i
   "put the loop in replace mode"
@@ -76,7 +45,7 @@
 
 (def-loop-player 0)
 
-(reset-i 1)
+(reset-i 2)
 (replace-mode-i 4 1)
 (-main)
 (pp-node-tree)
