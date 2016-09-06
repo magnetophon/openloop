@@ -29,3 +29,4 @@
 ;; (def mode-bus 1007)
 (def loop-nr-bus 1008)
 (def mode-bus-base 500)
+(def now-bus-base (+ nr-loops mode-bus-base))

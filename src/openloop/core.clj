@@ -24,8 +24,6 @@
   (init)
   )
 
-(switch-to-i 0)
-
 (defn replace-mode-i
   "put the loop in replace mode"
   [i rep]
@@ -45,18 +43,20 @@
 
 (def-loop-player 0)
 
-(reset-i 2)
+(reset-i 1)
 (replace-mode-i 4 1)
 (-main)
 (pp-node-tree)
 (init)
-(switch-to-i 0)
+(ctl command-handler-synth :loop-nr 0)
 ;; (ctl (:rec-id (:recorder (:value @fsm-state)))  :trig 1)
 (ctl command-handler-synth  :trig 1)
-(ctl command-handler-synth  :mode 0)
 (ctl command-handler-synth  :mode 1)
 (ctl command-handler-synth  :mode 2)
 (ctl command-handler-synth  :mode 3)
+(ctl command-handler-synth  :mode 0)
+(ctl command-handler-synth :loop-nr 1)
+(ctl command-handler-synth :loop-nr 2)
 (switch-to-i 1)
 (switch-to-i 2)
 (switch-to-i 3)
@@ -66,14 +66,13 @@
 (switch-to-i 7)
 (ctl loop-rec-synth   :reset 1)
 (ctl play-synth3   :reset 1)
-(def play-i-synth (play-i [:tail play-group] 0))
+(def play-i-synth (play-i [:tail play-group] 1))
 (kill play-i-synth)
 (defsynth play-i
   [i 0]
-
   (out:ar 70 (buf-rd:ar nr-chan i (phasor:ar :trig 1 :end max-phasor-val ) 0 1))
   )
-@(get-in master-clock-synth [:taps :length ])
+@(get-in short-clock-synth [:taps :length ])
 @(get-in loop-master-play-synth [:taps :clock ])
 @(get-in ram-master-rec-synth [:taps :my-tap])
 @(get-in (:rec-id (:recorder (:value @fsm-state))) [:taps :my-tap])

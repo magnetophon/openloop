@@ -51,7 +51,7 @@
 
 
     ;; (ctl loop-master-play-synth  :now-bus 2000)
-    ;; (ctl master-clock-synth  :now-bus 2000)
+    ;; (ctl short-clock-synth  :now-bus 2000)
     ;; (ctl loop-rec-synth   :which-buf (eval i))
     ;; (ctl loop-rec-synth   :reset 1)
     ;; (ctl player :which-buf (eval i))
@@ -151,7 +151,7 @@
 
   (def in-synth (input [:head in-group]))
   (disk-recording-start rec-group "/tmp/openloop.wav" :n-chans nr-chan :samples "float")
-  ;; (def master-clock-synth (master-clock [:tail rec-group]))
+  ;; (def short-clock-synth (short-clock [:tail rec-group]))
   ;; (def ram-master-rec-synth (ram-master-rec [:tail rec-group]))
   ;; (def loop-master-play-synth (loop-master-play [:tail play-group]))
   ;; (def loop-rec-synth (loop-rec [:tail rec-group]))
