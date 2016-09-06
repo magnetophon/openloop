@@ -24,14 +24,6 @@
   (init)
   )
 
-(defn int-to-play-synth
-  "convert a number into a play-synth name"
-  [i]
-  ;; (eval (symbol (str "play-synth" i)))
-  (symbol (str "play-synth" i))
-  )
-
-
 (defn switch-to-i
   "switch the current loop"
   [i]

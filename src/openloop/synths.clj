@@ -147,51 +147,51 @@
 ;; 6 double : souble the length of the loop by copying it
 ;; 7 cut-mode: toggle the volume
 
-(defn get-mode
-  "get the mode of loop i"
-  [i]
-  ;; (buffer-get modes-buffer i)
-  (buf-rd:kr 1 modes-buffer i 0 1)
-  )
+;; (defn get-mode
+;;   "get the mode of loop i"
+;;   [i]
+;;   ;; (buffer-get modes-buffer i)
+;;   (buf-rd:kr 1 modes-buffer i 0 1)
+;;   )
 
-(defn get-active-loop
-  "get the number of the currently active loop"
-  []
-  (buffer-get active-loop-buffer 0))
+;; (defn get-active-loop
+;;   "get the number of the currently active loop"
+;;   []
+;;   (buffer-get active-loop-buffer 0))
 
 (defsynth command-handler
   "receive keyboard, midi, or osc events and turn them into commands for the loopers"
   [mode 0 loop-nr (+ 1 nr-loops)]
   (let [
-        prev-active-loop (get-active-loop)
-        prev-mode-of-prev-loop (get-mode prev-active-loop)
-        new-loop? (not= loop-nr prev-active-loop)
-        new-mode? (not= mode prev-mode-of-prev-loop)
-        needs-transition? (and new-loop?
-                               new-mode?
-                               (not= 0 prev-mode-of-prev-loop)
-                               (not= 2 prev-mode-of-prev-loop)
-                               (not= 7 prev-mode-of-prev-loop))
-        transition-mode (select:kr
-                         needs-transition?
-                         [ prev-mode-of-prev-loop
-                          2
-                          ])
-        prev-mode-bus (+ prev-active-loop mode-bus-base )
+        ;; prev-active-loop (get-active-loop)
+        ;; prev-mode-of-prev-loop (get-mode prev-active-loop)
+        ;; new-loop? (not= loop-nr prev-active-loop)
+        ;; new-mode? (not= mode prev-mode-of-prev-loop)
+        ;; needs-transition? (and new-loop?
+        ;;                        new-mode?
+        ;;                        (not= 0 prev-mode-of-prev-loop)
+        ;;                        (not= 2 prev-mode-of-prev-loop)
+        ;;                        (not= 7 prev-mode-of-prev-loop))
+        ;; transition-mode (select:kr
+        ;;                  needs-transition?
+        ;;                  [ prev-mode-of-prev-loop
+        ;;                   2
+        ;;                   ])
+        ;; prev-mode-bus (+ prev-active-loop mode-bus-base )
         mode-bus (+ loop-nr mode-bus-base)
 
 
         ]
 
-    (out:kr prev-mode-bus transition-mode)
+    ;; (out:kr prev-mode-bus transition-mode)
     (out:kr mode-bus mode)
-    (buf-wr:kr loop-nr active-loop-buffer 0 0)
-    (buf-wr:kr mode modes-buffer loop-nr 0 )
+    ;; (buf-wr:kr loop-nr active-loop-buffer 0 0)
+    ;; (buf-wr:kr mode modes-buffer loop-nr 0 )
 
     ;; [mode 0 loop-nr [0 :tr]]
     ;; (out:kr mode-bus mode)
-    (out:kr loop-nr-bus loop-nr)
-    (send-trig:kr (impulse:kr 1) 6 (a2k mode ) )
+    ;; (out:kr loop-nr-bus loop-nr)
+    ;; (send-trig:kr (impulse:kr 1) 6 (a2k mode ) )
     ;; (send-trig:kr (impulse:kr 1) 666 (a2k loop-nr ) )
     ))
 

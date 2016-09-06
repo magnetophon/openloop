@@ -34,6 +34,14 @@
 ;; (defonce ^:private silent-buffer (buffer 0))
 ;; (buffer-fill! buffer0 (:id silent-buffer))
 
+
+(defn int-to-play-synth
+  "convert a number into a play-synth name"
+  [i]
+  ;; (eval (symbol (str "play-synth" i)))
+  (symbol (str "play-synth" i))
+  )
+
 (defn def-loop-player
   "create a loop player"
   [i]
