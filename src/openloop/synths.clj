@@ -161,7 +161,7 @@
 
 (defsynth command-handler
   "receive keyboard, midi, or osc events and turn them into commands for the loopers"
-  [mode 0 loop-nr (+ 1 nr-loops)]
+  [mode 0, loop-nr (+ 1 nr-loops), trig [0 :tr], reset [0 :tr], rec-clock-bus 42,  master-clock-bus 44, length-bus 80, now-bus 1001]
   (let [
         ;; prev-active-loop (get-active-loop)
         ;; prev-mode-of-prev-loop (get-mode prev-active-loop)
@@ -178,20 +178,41 @@
         ;;                   2
         ;;                   ])
         ;; prev-mode-bus (+ prev-active-loop mode-bus-base )
+        rec-clock (in:ar rec-clock-bus 1)
         mode-bus (+ loop-nr mode-bus-base)
+        ;;********************************************************************************************
+        ;; clock
+        ;;********************************************************************************************
+        now (* trig (a2k (latch:ar rec-clock trig)))
+        new-now? (not= 0 now)
 
+        wants-recording (toggle-ff:kr  new-now?)
 
+        wants-start? (and new-now? (= wants-recording 1)) ;was start pressed?
+        wants-stop? (and new-now? (= wants-recording 0)) ; was stop pressed
+
+        started? (set-reset-ff:kr wants-start? reset) ; once start is pressed, stays 1 until we delete the loop
+        stopped? (set-reset-ff:kr wants-stop? reset) ; once stop is pressed, stays 1 until we delete the loop
+        start (latch:kr now started? )
+        stop (latch:kr now stopped? )
+        length (max (- stop start) 0 )
+        master-clock (select started?
+                             [(dc:ar -1)
+                              (phasor:ar :trig started?  :end length )])
         ]
 
     ;; (out:kr prev-mode-bus transition-mode)
+    (out:kr length-bus length )
     (out:kr mode-bus mode)
+    (out:ar master-clock-bus master-clock )
+    (out:kr now-bus (* now trig))
     ;; (buf-wr:kr loop-nr active-loop-buffer 0 0)
     ;; (buf-wr:kr mode modes-buffer loop-nr 0 )
 
     ;; [mode 0 loop-nr [0 :tr]]
     ;; (out:kr mode-bus mode)
     ;; (out:kr loop-nr-bus loop-nr)
-    ;; (send-trig:kr (impulse:kr 1) 6 (a2k mode ) )
+    ;; (send-trig:kr (impulse:kr 1) 6 (a2k master-clock ) )
     ;; (send-trig:kr (impulse:kr 1) 666 (a2k loop-nr ) )
     ))
 
@@ -467,7 +488,7 @@
     ;; (send-trig:kr now-bus 0 now-bus)
     (out:ar out-bus sig)
     (buf-wr my-in which-buf write-index 0 )
-    (send-trig:kr (impulse:kr 1) 66 (a2k mode ) )
+    ;; (send-trig:kr (impulse:kr 1) 66 (a2k mode ) )
     ;; (send-trig:kr (impulse:kr 1) 666 (a2k wants-mode ) )
     ;; (buf-wr:kr loop-length lengths-buffer lengths-buffer-index 0 )
     ;; (send-trig:kr new-now? 42 (a2k corner-case-length) )

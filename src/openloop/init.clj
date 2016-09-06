@@ -149,7 +149,7 @@
 
   (def in-synth (input [:head in-group]))
   (disk-recording-start rec-group "/tmp/openloop.wav" :n-chans nr-chan :samples "float")
-  (def master-clock-synth (master-clock [:tail rec-group]))
+  ;; (def master-clock-synth (master-clock [:tail rec-group]))
   ;; (def ram-master-rec-synth (ram-master-rec [:tail rec-group]))
   ;; (def loop-master-play-synth (loop-master-play [:tail play-group]))
   ;; (def loop-rec-synth (loop-rec [:tail rec-group]))
