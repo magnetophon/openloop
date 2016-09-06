@@ -161,7 +161,7 @@
 
 (defsynth command-handler
   "receive keyboard, midi, or osc events and turn them into commands for the loopers"
-  [mode 0, loop-nr (+ 1 nr-loops), trig [0 :tr], reset [0 :tr], rec-clock-bus 42,  short-clock-bus 44, long-clock-bus 46, short-length-bus 80 ]
+  [mode 0, loop-nr (+ 1 nr-loops), trig [0 :tr], reset [0 :tr], rec-clock-bus 42,  short-clock-bus 44, long-clock-bus 46, ui-clock-bus 48, short-length-bus 80 ]
   (let [
         ;; prev-active-loop (get-active-loop)
         ;; prev-mode-of-prev-loop (get-mode prev-active-loop)
@@ -211,6 +211,8 @@
         reset-long-clock? (and (= 0 short-clock) (= 0 started?))
 
         long-clock (phasor:ar reset-long-clock? 1 0 long-length 0)
+
+        ui-clock (impulse:kr 3)
         ]
 
     ;; (out:kr prev-mode-bus transition-mode)
@@ -219,13 +221,15 @@
     (out:ar short-clock-bus short-clock )
     (out:ar long-clock-bus long-clock )
     (out:kr now-bus (* now trig))
+    (out:kr ui-clock-bus ui-clock)
     ;; (buf-wr:kr loop-nr active-loop-buffer 0 0)
     ;; (buf-wr:kr mode modes-buffer loop-nr 0 )
 
     ;; [mode 0 loop-nr [0 :tr]]
     ;; (out:kr mode-bus mode)
     ;; (out:kr loop-nr-bus loop-nr)
-    (send-trig:kr (impulse:kr 1) 6 (a2k long-length ) )
+    (send-trig:kr ui-clock 0 (a2k long-length ) )
+    (send-trig:kr ui-clock 1 (a2k long-clock ) )
     ;; (send-trig:kr (impulse:kr 1) 666 (a2k loop-nr ) )
     ))
 
@@ -234,13 +238,14 @@
 
 (defsynth loop-play
   "play back a slave loop"
-  [ in-bus 50, out-bus 70, short-length-bus 80, rec-clock-bus 42, short-clock-bus 44, long-clock-bus 46, reset-bus 1002, which-buf 0, reset [0 :tr]]
+  [ in-bus 50, out-bus 70, short-length-bus 80, rec-clock-bus 42, short-clock-bus 44, long-clock-bus 46, ui-clock-bus 48, reset-bus 1002, which-buf 0, reset [0 :tr]]
   (let [
 
         ;; **************************************************************************************
         ;; input busses
         ;; **************************************************************************************
 
+        ui-clock (in:kr ui-clock-bus )
         now-bus (+ which-buf  now-bus-base)
         now (in:kr now-bus) ; gives the rec-clock time when we hit start/stop
         rec-clock (in:ar rec-clock-bus) ; disk recording clock
@@ -418,6 +423,8 @@
     ;; (send-trig:kr now-bus 0 now-bus)
     (out:ar out-bus sig)
     (buf-wr my-in which-buf write-index 0 )
+    (send-trig:kr ui-clock 2 (a2k write-index ) )
+    (send-trig:kr ui-clock 3 (a2k loop-clock ) )
     ;; (send-trig:kr (impulse:kr 1) 66 (a2k mode ) )
     ;; (send-trig:kr (impulse:kr 1) 666 (a2k wants-mode ) )
     ;; (buf-wr:kr loop-length lengths-buffer lengths-buffer-index 0 )

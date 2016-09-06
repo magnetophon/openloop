@@ -24,21 +24,30 @@
   (init)
   )
 
-(defn replace-mode-i
-  "put the loop in replace mode"
-  [i rep]
-  (let [player (int-to-play-synth i) ]
-    (ctl player  :replace rep)
-    (dotimes [j nr-loops]
-      (when-not (= i j)
-        (ctl  (int-to-play-synth j)  :replace (= 0 rep)))
-      )
-    ))
-
-;; (ctl play-synth0 :now-bus 1001)
-
-
 (on-event "/tr" #(println "event: " % (msg2int %)) ::index-synth)
+
+(defn msg2id
+  "takes a message and returns the value in integer"
+  [msg]
+  (int (first (rest (:args msg))) ))
+
+(defn msg2int
+  "takes a message and returns the value in integer"
+  [msg]
+  (int (last (:args msg)) ))
+
+(def ui-atom (atom []))
+
+(defn write-ui-atom
+  "receive events from scsynth and write them to the ui-atom"
+  [e] ;the events
+  ;; (println "event: " (msg2id e) (msg2int e))
+  (swap! ui-atom assoc (msg2id e) (msg2int e))
+  )
+(println @ui-atom)
+
+(println "***********************")
+(on-event "/tr" write-ui-atom ::index-synth)
 (remove-event-handler ::index-synth)
 
 (def-loop-player 0)
@@ -117,11 +126,6 @@
 (on-event "/tr" #(println "samples: " (msg2int %) "   hours: " (float (/ (msg2int %) (* SR 60 60)))) ::index-synth)
 (on-event "/tr" #(println "samples: " % ) ::index-synth)
 (remove-event-handler ::index-synth)
-
-(defn msg2int
-  "takes a message and returns the value in integer"
-  [msg]
-  (int (last (:args msg)) ))
 
 
 (index-synth)

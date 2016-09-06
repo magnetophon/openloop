@@ -8,7 +8,7 @@
 (def downbeatAtom  (atom nil))
 
 (defn setup []
-  ;; (q/background 200)
+  (q/background 200)
   ;; (q/frame-rate 3)                 ;; Set the background colour to
   )
 
